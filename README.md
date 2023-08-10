@@ -6,9 +6,9 @@
 
 ## Features
 
-- [x] Universal gate set (CNOT, H, T)
+- [x] Universal gate set (H, T, CNOT)
+- [x] Generic gate (U)
 - [ ] Circuit printing
-- [ ] Universal gate (U)
 
 ## Installation
 

@@ -19,14 +19,17 @@ class QubitSimulator:
                         self.state_vector[target_state],
                     ]
 
-    def X(self, target):
-        self._apply_gate(gates.X, target)
-
     def H(self, target):
         self._apply_gate(gates.H, target)
 
     def T(self, target):
         self._apply_gate(gates.T, target)
+
+    def X(self, target):
+        self._apply_gate(gates.X, target)
+
+    def CNOT(self, control, target):
+        self._apply_gate(gates.X, target, control)
 
     def U(self, target, theta, phi, lambda_):
         U = gates.U(theta, phi, lambda_)
@@ -35,9 +38,6 @@ class QubitSimulator:
     def CU(self, control, target, theta, phi, lambda_):
         U = gates.U(theta, phi, lambda_)
         self._apply_gate(U, target, control)
-
-    def CNOT(self, control, target):
-        self._apply_gate(gates.X, target, control)
 
     def Measure(self, shots=1):
         probabilities = np.abs(self.state_vector) ** 2
