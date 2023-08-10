@@ -34,12 +34,7 @@ class QubitSimulator:
 
     def CU(self, control, target, theta, phi, lambda_):
         U = gates.U(theta, phi, lambda_)
-        controlled_U = np.eye(2**self.num_qubits, dtype=complex)
-        controlled_U[
-            2 ** (self.num_qubits - target - 1) : 2 ** (self.num_qubits - target),
-            2 ** (self.num_qubits - target - 1) : 2 ** (self.num_qubits - target),
-        ] = U
-        self._apply_gate(controlled_U, target, control)
+        self._apply_gate(U, target, control)
 
     def CNOT(self, control, target):
         self._apply_gate(gates.X, target, control)

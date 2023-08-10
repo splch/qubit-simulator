@@ -4,7 +4,14 @@ from qubit_simulator import QubitSimulator
 from qubit_simulator import gates
 
 
-def test_hadamard_gate():
+def test_x_gate():
+    simulator = QubitSimulator(1)
+    simulator.X(0)
+    # After applying the Pauli-X gate, the state should be |1⟩
+    assert np.allclose(simulator.state_vector, [0, 1])
+
+
+def test_h_gate():
     simulator = QubitSimulator(1)
     simulator.H(0)
     # After applying the Hadamard gate, the state should be an equal superposition
@@ -15,7 +22,7 @@ def test_t_gate():
     simulator = QubitSimulator(1)
     simulator.X(0)  # Set the initial state to |1⟩
     simulator.T(0)
-    # After applying the T gate, the state should have a phase shift of pi/4
+    # After applying the π/8 gate, the state should have a phase shift of π/4
     assert np.allclose(simulator.state_vector, [0, 0.70710678 + 0.70710678j])
 
 
@@ -25,17 +32,8 @@ def test_u_gate():
     lambda_ = np.pi / 3
     simulator = QubitSimulator(1)
     simulator.U(0, theta, phi, lambda_)
-    U_gate = np.array(
-        [
-            [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
-            [
-                np.exp(1j * phi) * np.sin(theta / 2),
-                np.exp(1j * lambda_ + 1j * phi) * np.cos(theta / 2),
-            ],
-        ],
-        dtype=complex,
-    )
-    expected_state_vector = np.dot(U_gate, [1, 0])  # Initial state is |0⟩
+    U = gates.U(theta, phi, lambda_)
+    expected_state_vector = np.dot(U, [1, 0])  # Initial state is |0⟩
     assert np.allclose(simulator.state_vector, expected_state_vector)
 
 
@@ -43,15 +41,13 @@ def test_controlled_u_gate():
     theta = np.pi / 2
     phi = np.pi / 4
     lambda_ = np.pi / 3
-    controlled_U_gate = np.eye(4, dtype=complex)
-    controlled_U_gate[2:4, 2:4] = gates.U(theta, phi, lambda_)
     simulator = QubitSimulator(2)
-    simulator.X(0)  # Set control qubit to |1⟩
-    # Apply controlled-U gate manually by dot product with the state vector
-    simulator.state_vector = np.dot(controlled_U_gate, simulator.state_vector)
-    expected_state_vector = np.dot(
-        controlled_U_gate, [0, 0, 1, 0]
-    )  # Initial state is |10⟩
+    simulator.X(0)  # Set the control qubit to |1⟩
+    simulator.CU(0, 1, theta, phi, lambda_)
+    U = gates.U(theta, phi, lambda_)
+    expected_state_vector = np.kron(
+        [0, 1], np.dot(U, [1, 0])
+    )  # Expected state is |1⟩ ⊗ U|0⟩
     assert np.allclose(simulator.state_vector, expected_state_vector)
 
 
