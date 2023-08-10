@@ -2,15 +2,12 @@
 
 ## Overview
 
-`QubitSimulator` is a simple and lightweight quantum computing simulator library implemented in Python. It provides basic functionalities for simulating quantum circuits with commonly used quantum gates, including Hadamard (H), T, and Controlled-NOT (CNOT) gates. You can also perform measurements on qubits and run the quantum circuit for multiple shots.
+`QubitSimulator` is a simple and lightweight quantum computing simulator library implemented in Python. It provides basic functionalities for simulating quantum circuits with commonly used quantum gates, including Hadamard, Phase, $\frac{\pi}{8}$, and Controlled-NOT gates. You can also perform measurements on qubits and run the quantum circuit for multiple shots.
 
 ## Features
 
-- **Hadamard (H) Gate:** Creates a superposition of states.
-- **T Gate:** Applies a phase of \( \frac{\pi}{4} \).
-- **Controlled-NOT (CNOT) Gate:** Applies a NOT operation to the target qubit if the control qubit is in state |1⟩.
-- **Measure:** Measures the qubits and returns the result.
-- **Run Method:** Executes the quantum circuit and returns the results for multiple shots.
+- [x] Universal gate set (CNOT, H, S, T)
+- [ ] 
 
 ## Installation
 
