@@ -98,3 +98,11 @@ def test_ghz_state():
     assert np.allclose(
         simulator.state_vector, [0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678]
     )
+
+
+def test_measure_probabilities():
+    shots = 10000
+    simulator = QubitSimulator(1)
+    simulator.H(0)
+    results = simulator.run(shots=shots)
+    assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
