@@ -94,6 +94,7 @@ def test_measure_multiple_shots():
     simulator = QubitSimulator(1)
     simulator.X(0)
     results = simulator.Measure(shots=shots)
+    # Measure 100 1s
     assert results.count("1") == shots
 
 
@@ -134,7 +135,7 @@ def test_gate_reversibility():
     simulator.H(0)
     U_inv = np.conjugate(U).T
     simulator._apply_gate(U_inv, 0)
-    assert np.allclose(simulator.state_vector, [1, 0], atol=1e-6)
+    assert np.allclose(simulator.state_vector, [1, 0])
 
 
 def test_measure_probabilities():
