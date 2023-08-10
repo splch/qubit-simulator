@@ -5,42 +5,37 @@ from . import gates
 class QubitSimulator:
     def __init__(self, num_qubits):
         self.num_qubits = num_qubits
-        self.state_vector = np.zeros(2**num_qubits)
+        self.state_vector = np.zeros(2 ** num_qubits, dtype=complex)
         self.state_vector[0] = 1
 
-    def _apply_gate(self, gate, target_qubit, control_qubit=None):
-        # Create an operation matrix for applying the gate
-        if control_qubit is None:
-            # Single-qubit gate
-            op_matrix = 1
-            for qubit in range(self.num_qubits):
-                current_gate = gate if qubit == target_qubit else gates.I
-                op_matrix = np.kron(op_matrix, current_gate)
-        else:
-            # Controlled gate
-            op_matrix = np.eye(2**self.num_qubits)
-            for state in range(2**self.num_qubits):
+    def _apply_gate(self, gate, target_qubits, control_qubit=None):
+        op_matrix = 1
+        target_idx = 0
+        for qubit in range(self.num_qubits):
+            current_gate = gate[target_idx] if qubit in target_qubits else gates.I
+            op_matrix = np.kron(op_matrix, current_gate)
+            if qubit in target_qubits:
+                target_idx += 1
+        if control_qubit is not None:
+            controlled_op_matrix = np.eye(2 ** self.num_qubits, dtype=complex)
+            for state in range(2 ** self.num_qubits):
                 binary_state = format(state, f"0{self.num_qubits}b")
-                if binary_state[control_qubit] == '1':
-                    submatrix = 1
-                    for qubit in range(self.num_qubits):
-                        current_gate = gate if qubit == target_qubit else gates.I
-                        submatrix = np.kron(submatrix, current_gate)
-                    op_matrix[state, :] = np.dot(submatrix, op_matrix[state, :])
-        # Apply the operation matrix to the state vector
+                if all(binary_state[c] == '1' for c in control_qubit):
+                    controlled_op_matrix[state, :] = np.dot(op_matrix, controlled_op_matrix[state, :])
+            op_matrix = controlled_op_matrix
         self.state_vector = np.dot(op_matrix, self.state_vector)
 
     def H(self, target_qubit):
-        self._apply_gate(gates.H, target_qubit)
+        self._apply_gate([gates.H], [target_qubit])
 
     def T(self, target_qubit):
-        self._apply_gate(gates.T, target_qubit)
+        self._apply_gate([gates.T], [target_qubit])
 
     def X(self, target_qubit):
-        self._apply_gate(gates.X, target_qubit)
+        self._apply_gate([gates.X], [target_qubit])
 
     def CNOT(self, control_qubit, target_qubit):
-        self._apply_gate(gates.X, target_qubit, control_qubit)
+        self._apply_gate([gates.X], [target_qubit], [control_qubit])
 
     def Measure(self):
         probabilities = np.abs(self.state_vector) ** 2

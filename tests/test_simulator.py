@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from qubit_simulator import QubitSimulator
+from qubit_simulator import gates
 
 
 def test_hadamard_gate():
@@ -24,6 +25,15 @@ def test_cnot_gate():
     simulator.CNOT(0, 1)
     # After applying the CNOT gate, the state should be |10>
     assert np.allclose(simulator.state_vector, [0, 0, 1, 0])
+
+
+def test_target_control():
+    simulator = QubitSimulator(3)
+    simulator.X(0)
+    simulator.X(2)  # Set the initial state to |101>
+    simulator.CNOT(control_qubit=2, target_qubit=0)
+    # After applying the CNOT gate, the state should be |001>
+    assert np.allclose(simulator.state_vector, [0, 1, 0, 0, 0, 0, 0, 0])
 
 
 def test_measure():
@@ -55,5 +65,23 @@ def test_ghz_state():
     simulator.CNOT(0, 1)
     simulator.CNOT(0, 2)
     # The state should be a GHZ state
-    expected_state = np.array([0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678])
-    assert np.allclose(simulator.state_vector, expected_state)
+    assert np.allclose(simulator.state_vector, [0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678])
+
+
+def test_custom_2qubit_gate():
+    custom_gate = np.kron(gates.X, gates.H)
+    simulator = QubitSimulator(2)
+    simulator._apply_gate([gates.X, gates.H], [0, 1])
+    assert np.allclose(simulator.state_vector, np.dot(custom_gate, [1, 0, 0, 0]))
+
+
+def test_qft():
+    simulator = QubitSimulator(3)
+    # Applying QFT manually
+    for k in range(3):
+        simulator.H(k)
+        for j in range(k + 1, 3):
+            phase = np.pi / (2 ** (j - k))
+            phase_shift = np.array([[1, 0], [0, np.exp(1j * phase)]])
+            simulator._apply_gate([phase_shift], [j], [k])
+    assert np.allclose(simulator.state_vector, [1 / np.sqrt(8)] * 8)

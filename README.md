@@ -61,7 +61,7 @@ simulator.measure()
 ## Tests
 
 ```shell
-pytest
+python -m pytest
 ```
 
 ## License
