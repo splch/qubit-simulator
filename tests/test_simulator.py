@@ -1,6 +1,5 @@
 import numpy as np
-from qubit_simulator import QubitSimulator
-from qubit_simulator import gates
+from qubit_simulator import QubitSimulator, gates
 
 
 def test_x_gate():
@@ -79,8 +78,7 @@ def test_run():
     simulator = QubitSimulator(1)
     # Running the simulation 10 times should produce 10 results
     results = simulator.run(10)
-    assert len(results) == 10
-    assert set(results) == {"0"}
+    assert results == {"0": 10}
 
 
 def test_bell_state():

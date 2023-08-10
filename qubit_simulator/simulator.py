@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 from . import gates
 
 
@@ -44,5 +45,6 @@ class QubitSimulator:
         result = np.random.choice(2**self.num_qubits, p=probabilities, size=shots)
         return [format(r, f"0{self.num_qubits}b") for r in result]
 
-    def run(self, num_shots=100):
-        return self.Measure(shots=num_shots)
+    def run(self, shots=100):
+        results = self.Measure(shots)
+        return collections.Counter(results)
