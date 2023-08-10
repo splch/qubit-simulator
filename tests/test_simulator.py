@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 from qubit_simulator import QubitSimulator
 from qubit_simulator import gates
