@@ -60,7 +60,9 @@ simulator.measure()
 
 ## Tests
 
-Comprehensive tests are included to verify the correct implementation of the simulator. Refer to the test code for details on testing the functionality.
+```shell
+pytest
+```
 
 ## License
 

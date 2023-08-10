@@ -12,7 +12,7 @@ def test_hadamard_gate():
 
 def test_t_gate():
     simulator = QubitSimulator(1)
-    simulator.state_vector = [0, 1]  # Set the initial state to |1>
+    simulator.X(0) # Set the initial state to |1>
     simulator.T(0)
     # After applying the T gate, the state should have a phase shift of pi/4
     assert np.allclose(simulator.state_vector, [0, 0.70710678 + 0.70710678j])
@@ -29,6 +29,7 @@ def test_cnot_gate():
 def test_measure():
     simulator = QubitSimulator(1)
     simulator.X(0)
+    # After applying the X gate, the state should be |1>
     result = simulator.Measure()
     assert result == "1"
 
@@ -40,7 +41,7 @@ def test_run():
     assert set(results) == {"0"}
 
 
-def test_bell_circuit():
+def test_bell_state():
     simulator = QubitSimulator(2)
     simulator.H(0)
     simulator.CNOT(0, 1)
