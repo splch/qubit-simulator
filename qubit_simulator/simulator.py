@@ -9,32 +9,26 @@ class QubitSimulator:
         self.state_vector[0] = 1
 
     def _apply_gate(self, gate, target_qubit, control_qubit=None):
-        if control_qubit is not None:  # Handle controlled gates
-            # Create the controlled gate matrix
-            control_gate = np.kron(
-                gates.I
-                - np.outer(gates.I[:, control_qubit], gates.I[control_qubit, :]),
-                gate,
-            )
-            control_gate += np.kron(
-                np.outer(gates.I[:, control_qubit], gates.I[control_qubit, :]), gates.I
-            )
-            # Create the operator using Kronecker products
-            operator = 1
+        # Create an operation matrix for applying the gate
+        if control_qubit is None:
+            # Single-qubit gate
+            op_matrix = 1
             for qubit in range(self.num_qubits):
-                if qubit == control_qubit or qubit == target_qubit:
-                    continue
-                operator = np.kron(operator, gates.I)
-            operator = np.kron(operator, control_gate)
-        else:  # Handle single qubit gates
-            operator = 1
-            for qubit in range(self.num_qubits):
-                if qubit == target_qubit:
-                    operator = np.kron(operator, gate)
-                else:
-                    operator = np.kron(operator, gates.I)
-        # Apply the operator to the state vector
-        self.state_vector = np.dot(operator, self.state_vector)
+                current_gate = gate if qubit == target_qubit else gates.I
+                op_matrix = np.kron(op_matrix, current_gate)
+        else:
+            # Controlled gate
+            op_matrix = np.eye(2**self.num_qubits)
+            for state in range(2**self.num_qubits):
+                binary_state = format(state, f"0{self.num_qubits}b")
+                if binary_state[control_qubit] == '1':
+                    submatrix = 1
+                    for qubit in range(self.num_qubits):
+                        current_gate = gate if qubit == target_qubit else gates.I
+                        submatrix = np.kron(submatrix, current_gate)
+                    op_matrix[state, :] = np.dot(submatrix, op_matrix[state, :])
+        # Apply the operation matrix to the state vector
+        self.state_vector = np.dot(op_matrix, self.state_vector)
 
     def H(self, target_qubit):
         self._apply_gate(gates.H, target_qubit)

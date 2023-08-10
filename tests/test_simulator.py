@@ -47,3 +47,13 @@ def test_bell_state():
     simulator.CNOT(0, 1)
     # After applying the Hadamard and CNOT gates, the state should be a Bell state
     assert np.allclose(simulator.state_vector, [0.70710678, 0, 0, 0.70710678])
+
+
+def test_ghz_state():
+    simulator = QubitSimulator(3)
+    simulator.H(0)
+    simulator.CNOT(0, 1)
+    simulator.CNOT(0, 2)
+    # The state should be a GHZ state
+    expected_state = np.array([0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678])
+    assert np.allclose(simulator.state_vector, expected_state)
