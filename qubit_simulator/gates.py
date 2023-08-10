@@ -14,3 +14,15 @@ I = np.array([[1, 0], [0, 1]])
 
 # Zero gate
 O = np.zeros((2, 2))
+
+# Generic gate
+U = lambda theta, phi, lambda_: np.array(
+    [
+        [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
+        [
+            np.exp(1j * phi) * np.sin(theta / 2),
+            np.exp(1j * lambda_ + 1j * phi) * np.cos(theta / 2),
+        ],
+    ],
+    dtype=complex,
+)

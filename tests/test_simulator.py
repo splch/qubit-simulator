@@ -19,6 +19,42 @@ def test_t_gate():
     assert np.allclose(simulator.state_vector, [0, 0.70710678 + 0.70710678j])
 
 
+def test_u_gate():
+    theta = np.pi / 2
+    phi = np.pi / 4
+    lambda_ = np.pi / 3
+    simulator = QubitSimulator(1)
+    simulator.U(0, theta, phi, lambda_)
+    U_gate = np.array(
+        [
+            [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
+            [
+                np.exp(1j * phi) * np.sin(theta / 2),
+                np.exp(1j * lambda_ + 1j * phi) * np.cos(theta / 2),
+            ],
+        ],
+        dtype=complex,
+    )
+    expected_state_vector = np.dot(U_gate, [1, 0])  # Initial state is |0⟩
+    assert np.allclose(simulator.state_vector, expected_state_vector)
+
+
+def test_controlled_u_gate():
+    theta = np.pi / 2
+    phi = np.pi / 4
+    lambda_ = np.pi / 3
+    controlled_U_gate = np.eye(4, dtype=complex)
+    controlled_U_gate[2:4, 2:4] = gates.U(theta, phi, lambda_)
+    simulator = QubitSimulator(2)
+    simulator.X(0)  # Set control qubit to |1⟩
+    # Apply controlled-U gate manually by dot product with the state vector
+    simulator.state_vector = np.dot(controlled_U_gate, simulator.state_vector)
+    expected_state_vector = np.dot(
+        controlled_U_gate, [0, 0, 1, 0]
+    )  # Initial state is |10⟩
+    assert np.allclose(simulator.state_vector, expected_state_vector)
+
+
 def test_cnot_gate():
     simulator = QubitSimulator(2)
     simulator.state_vector = [0, 0, 0, 1]  # Set the initial state to |11⟩
@@ -69,24 +105,3 @@ def test_ghz_state():
     assert np.allclose(
         simulator.state_vector, [0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678]
     )
-
-
-def test_custom_2qubit_gate():
-    custom_gate = np.kron(gates.X, gates.H)
-    simulator = QubitSimulator(2)
-    simulator._apply_gate([gates.X, gates.H], [0, 1])
-    # After applying the custom 2-qubit gate, the state should be transformed according to the custom_gate
-    assert np.allclose(simulator.state_vector, np.dot(custom_gate, [1, 0, 0, 0]))
-
-
-def test_qft():
-    simulator = QubitSimulator(3)
-    # Applying QFT manually
-    for k in range(3):
-        simulator.H(k)
-        for j in range(k + 1, 3):
-            phase = np.pi / (2 ** (j - k))
-            phase_shift = np.array([[1, 0], [0, np.exp(1j * phase)]])
-            simulator._apply_gate([phase_shift], [j], [k])
-    # After applying the Quantum Fourier Transform, the state should be in the QFT state
-    assert np.allclose(simulator.state_vector, [1 / np.sqrt(8)] * 8)

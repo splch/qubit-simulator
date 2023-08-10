@@ -8,49 +8,41 @@ class QubitSimulator:
         self.state_vector = np.zeros(2**num_qubits, dtype=complex)
         self.state_vector[0] = 1
 
-    def _apply_gate(self, gate, targets, control=None):
-        op_matrix = 1
-        target_idx = 0
-        for qubit in range(self.num_qubits):
-            current_gate = gate[target_idx] if qubit in targets else gates.I
-            op_matrix = np.kron(op_matrix, current_gate)
-            if qubit in targets:
-                target_idx += 1
-        if control is not None:
-            controlled_op_matrix = np.eye(2**self.num_qubits, dtype=complex)
-            for state in range(2**self.num_qubits):
-                binary_state = format(state, f"0{self.num_qubits}b")
-                if all(binary_state[c] == "1" for c in control):
-                    controlled_op_matrix[state, :] = np.dot(
-                        op_matrix, controlled_op_matrix[state, :]
-                    )
-            op_matrix = controlled_op_matrix
-        self.state_vector = np.dot(op_matrix, self.state_vector)
+    def _apply_gate(self, gate, target, control=None):
+        target_mask = 1 << (self.num_qubits - target - 1)
+        for state in range(2**self.num_qubits):
+            if control is None or (state & (1 << (self.num_qubits - control - 1))):
+                if (state & target_mask) == 0:
+                    target_state = state | target_mask
+                    self.state_vector[state], self.state_vector[target_state] = gate @ [
+                        self.state_vector[state],
+                        self.state_vector[target_state],
+                    ]
 
     def X(self, target):
-        self._apply_gate([gates.X], [target])
+        self._apply_gate(gates.X, target)
 
     def H(self, target):
-        self._apply_gate([gates.H], [target])
+        self._apply_gate(gates.H, target)
 
     def T(self, target):
-        self._apply_gate([gates.T], [target])
+        self._apply_gate(gates.T, target)
 
     def U(self, target, theta, phi, lambda_):
-        U_gate = np.array(
-            [
-                [np.cos(theta / 2), -np.exp(1j * lambda_) * np.sin(theta / 2)],
-                [
-                    np.exp(1j * phi) * np.sin(theta / 2),
-                    np.exp(1j * lambda_ + 1j * phi) * np.cos(theta / 2),
-                ],
-            ],
-            dtype=complex,
-        )
-        self._apply_gate([U_gate], [target])
+        U = gates.U(theta, phi, lambda_)
+        self._apply_gate(U, target)
+
+    def CU(self, control, target, theta, phi, lambda_):
+        U = gates.U(theta, phi, lambda_)
+        controlled_U = np.eye(2**self.num_qubits, dtype=complex)
+        controlled_U[
+            2 ** (self.num_qubits - target - 1) : 2 ** (self.num_qubits - target),
+            2 ** (self.num_qubits - target - 1) : 2 ** (self.num_qubits - target),
+        ] = U
+        self._apply_gate(controlled_U, target, control)
 
     def CNOT(self, control, target):
-        self._apply_gate([gates.X], [target], [control])
+        self._apply_gate(gates.X, target, control)
 
     def Measure(self, shots=1):
         probabilities = np.abs(self.state_vector) ** 2
