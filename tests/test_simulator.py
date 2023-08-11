@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from qubit_simulator import QubitSimulator, gates
 
@@ -60,6 +61,17 @@ def test_cu_gate():
     # Apply U gate to the target qubit
     expected_result = np.kron(np.eye(2), gates.U(theta, phi, lambda_)) @ initial_state
     assert np.allclose(simulator.state_vector, expected_result)
+
+
+def test_swap_gate():
+    simulator = QubitSimulator(2)
+    simulator.state_vector = np.array(
+        [0, 1, 0, 0], dtype=complex
+    )  # Set the initial state to |01⟩
+    simulator.SWAP(0, 1)
+    # After swapping, the state should be |10⟩
+    expected_state = np.array([0, 0, 1, 0], dtype=complex)
+    assert np.allclose(simulator.state_vector, expected_state)
 
 
 def test_target_control():
@@ -136,3 +148,37 @@ def test_measure_probabilities():
     simulator.H(0)
     results = simulator.run(shots=shots)
     assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
+
+
+def apply_qft(simulator):
+    num_qubits = simulator.num_qubits
+    for target_qubit in range(num_qubits):
+        simulator.H(target_qubit)
+        for control_qubit in range(target_qubit + 1, num_qubits):
+            phase_angle = 2 * np.pi / (2 ** (control_qubit - target_qubit + 1))
+            simulator.CU(target_qubit, control_qubit, 0, 0, phase_angle)
+    # Swap qubits to match the desired output order
+    for i in range(num_qubits // 2):
+        j = num_qubits - i - 1
+        simulator.SWAP(i, j)
+
+
+@pytest.mark.parametrize("num_qubits", [1, 2, 5])
+def test_qft(num_qubits):
+    simulator = QubitSimulator(num_qubits)
+    # Create a random initial state vector and normalize it
+    random_state = np.random.rand(2**num_qubits) + 1j * np.random.rand(
+        2**num_qubits
+    )
+    random_state /= np.linalg.norm(random_state)
+    # Set the random state as the initial state in the simulator
+    simulator.state_vector = random_state.copy()
+    # Apply QFT in the simulator
+    apply_qft(simulator)
+    # Compute the expected result using NumPy's FFT and normalize
+    fft_result = np.fft.fft(random_state) / np.sqrt(2**num_qubits)
+    # Compare the state vectors
+    assert np.allclose(
+        sorted(simulator.state_vector, key=lambda x: (x.real, x.imag)),
+        sorted(fft_result, key=lambda x: (x.real, x.imag)),
+    )
