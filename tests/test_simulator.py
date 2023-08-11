@@ -136,3 +136,32 @@ def test_measure_probabilities():
     simulator.H(0)
     results = simulator.run(shots=shots)
     assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
+
+
+def test_qft():
+    def apply_standard_qft(simulator):
+        num_qubits = simulator.num_qubits
+        for target_qubit in range(num_qubits):
+            # Apply Hadamard gate to the target qubit
+            simulator.H(target_qubit)
+            # Apply controlled phase gates to the target qubit
+            for control_qubit in range(target_qubit + 1, num_qubits):
+                phase_angle = 2 * np.pi / (2 ** (control_qubit - target_qubit + 1))
+                simulator.CU(target_qubit, control_qubit, 0, 0, phase_angle)
+        # Swap qubits to match the desired output order
+        for i in range(num_qubits // 2):
+            simulator.CNOT(i, num_qubits - 1 - i)
+            simulator.CNOT(num_qubits - 1 - i, i)
+            simulator.CNOT(i, num_qubits - 1 - i)
+
+    simulator = QubitSimulator(3)
+    # Create a random initial state vector and normalize it
+    random_state = np.random.rand(8) + 1j * np.random.rand(8)
+    random_state /= np.linalg.norm(random_state)
+    # Set the random state as the initial state in the simulator
+    simulator.state_vector = random_state.copy()
+    # Apply standard QFT in the simulator
+    apply_standard_qft(simulator)
+    # Compute the expected result using NumPy's FFT and normalize
+    fft_result = np.fft.fft(random_state) / np.sqrt(8)
+    assert np.allclose(simulator.state_vector, fft_result)
