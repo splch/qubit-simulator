@@ -46,6 +46,11 @@ class QubitSimulator:
         U = gates.U(theta, phi, lambda_)
         self._apply_gate(U, target_qubit, control_qubit)
 
+    def SWAP(self, qubit1, qubit2):
+        self.CNOT(qubit1, qubit2)
+        self.CNOT(qubit2, qubit1)
+        self.CNOT(qubit1, qubit2)
+
     def Measure(self, shots=1):
         probabilities = np.abs(self.state_vector) ** 2
         result = np.random.choice(2**self.num_qubits, p=probabilities, size=shots)
