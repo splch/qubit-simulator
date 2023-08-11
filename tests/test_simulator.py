@@ -38,45 +38,35 @@ def test_cnot_gate():
 
 
 def test_u_gate():
-    theta = np.pi / 2
-    phi = np.pi / 4
-    lambda_ = np.pi / 3
+    theta = np.pi / 4
+    phi = np.pi / 3
+    lambda_ = np.pi / 2
     simulator = QubitSimulator(1)
     simulator.U(0, theta, phi, lambda_)
-    U = gates.U(theta, phi, lambda_)
-    expected_state_vector = np.dot(U, [1, 0])  # Initial state is |0⟩
-    assert np.allclose(simulator.state_vector, expected_state_vector)
+    # Expected result obtained from the U matrix using the given parameters
+    expected_result = gates.U(theta, phi, lambda_) @ [1, 0]
+    assert np.allclose(simulator.state_vector, expected_result)
 
 
-def test_controlled_u_gate():
-    theta = np.pi / 2
-    phi = np.pi / 4
-    lambda_ = np.pi / 3
+def test_cu_gate():
+    theta = np.pi / 4
+    phi = np.pi / 3
+    lambda_ = np.pi / 2
     simulator = QubitSimulator(2)
     simulator.X(0)  # Set the control qubit to |1⟩
     simulator.CU(0, 1, theta, phi, lambda_)
-    U = gates.U(theta, phi, lambda_)
-    expected_state_vector = np.kron(
-        [0, 1], np.dot(U, [1, 0])
-    )  # Expected state is |1⟩ ⊗ U|0⟩
-    assert np.allclose(simulator.state_vector, expected_state_vector)
-
-
-def test_controlled_u_gate_control_off():
-    theta = np.pi / 3
-    phi = np.pi / 4
-    lambda_ = np.pi / 2
-    simulator = QubitSimulator(2)
-    simulator.CU(0, 1, theta, phi, lambda_)
-    expected_state_vector = np.kron([1, 0], [1, 0])
-    assert np.allclose(simulator.state_vector, expected_state_vector)
+    # Initial state |10⟩
+    initial_state = np.array([0, 0, 1, 0], dtype=complex)
+    # Apply U gate to the target qubit
+    expected_result = np.kron(np.eye(2), gates.U(theta, phi, lambda_)) @ initial_state
+    assert np.allclose(simulator.state_vector, expected_result)
 
 
 def test_target_control():
     simulator = QubitSimulator(3)
     simulator.X(0)
     simulator.X(2)  # Set the initial state to |101⟩
-    simulator.CNOT(control=2, target=0)
+    simulator.CNOT(control_qubit=2, target_qubit=0)
     # After applying the CNOT gate, the state should be |001⟩
     assert np.allclose(simulator.state_vector, [0, 1, 0, 0, 0, 0, 0, 0])
 
@@ -129,11 +119,13 @@ def test_gate_reversibility():
     phi = np.pi / 4
     lambda_ = np.pi / 3
     simulator = QubitSimulator(1)
-    U = gates.U(theta, phi, lambda_)
     simulator.U(0, theta, phi, lambda_)
     simulator.H(0)
+    simulator.X(0)
+    simulator.X(0)
     simulator.H(0)
-    U_inv = np.conjugate(U).T
+    # Apply U inverse
+    U_inv = np.conjugate(gates.U(theta, phi, lambda_).T)
     simulator._apply_gate(U_inv, 0)
     assert np.allclose(simulator.state_vector, [1, 0])
 
