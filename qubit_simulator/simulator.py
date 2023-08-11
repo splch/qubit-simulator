@@ -20,7 +20,8 @@ class QubitSimulator:
             operator = 1
             for qubit in range(self.num_qubits):
                 operator = np.kron(
-                    operator, gate if qubit == target_qubit else np.eye(2, dtype=complex)
+                    operator,
+                    gate if qubit == target_qubit else np.eye(2, dtype=complex),
                 )
         # Apply the operator to the state vector
         self.state_vector = operator @ self.state_vector
