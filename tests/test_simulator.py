@@ -100,13 +100,6 @@ def test_measure_multiple_shots():
     assert results.count("1") == shots
 
 
-def test_run():
-    simulator = QubitSimulator(1)
-    # Running the simulation 10 times should produce 10 results
-    results = simulator.run(10)
-    assert results == {"0": 10}
-
-
 def test_measure_custom_basis():
     simulator = QubitSimulator(1)
     # Define the transformation matrix for the Pauli-X basis
@@ -116,6 +109,13 @@ def test_measure_custom_basis():
     # Measure in the X basis, which should result in the state |0⟩ in the X basis
     result = simulator.Measure(basis=X_basis)
     assert result == ["0"]
+
+
+def test_run():
+    simulator = QubitSimulator(1)
+    # Running the simulation 10 times should produce 10 results
+    results = simulator.run(10)
+    assert results == {"0": 10}
 
 
 def test_bell_state():
