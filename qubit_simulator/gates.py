@@ -8,6 +8,7 @@ class gates:
     T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
     # Pauli-X (NOT) gate
     X = np.array([[0, 1], [1, 0]])
+
     # Generic (U) gate
     @staticmethod
     def U(theta, phi, lambda_):
@@ -20,6 +21,7 @@ class gates:
                 ],
             ]
         )
+
     @staticmethod
     def create_controlled_gate(gate, control_qubit, target_qubit, num_qubits):
         controlled_gate = np.eye(2**num_qubits, dtype=complex)

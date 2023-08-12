@@ -107,6 +107,17 @@ def test_run():
     assert results == {"0": 10}
 
 
+def test_measure_custom_basis():
+    simulator = QubitSimulator(1)
+    # Define the transformation matrix for the Pauli-X basis
+    X_basis = np.array([[0, 1], [1, 0]])
+    # Apply the X gate to the qubit, transforming it to |1⟩
+    simulator.X(0)
+    # Measure in the X basis, which should result in the state |0⟩ in the X basis
+    result = simulator.Measure(basis=X_basis)
+    assert result == ["0"]
+
+
 def test_bell_state():
     simulator = QubitSimulator(2)
     simulator.H(0)
