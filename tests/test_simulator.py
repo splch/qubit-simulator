@@ -107,8 +107,8 @@ def test_measure_custom_basis():
     # Apply the X gate to the qubit, transforming it to |1⟩
     simulator.X(0)
     # Measure in the X basis, which should result in the state |0⟩ in the X basis
-    result = simulator.Measure(basis=X_basis)
-    assert result == ["0"]
+    result = simulator.run(shots=10, basis=X_basis)
+    assert set(result) == {"0"}
 
 
 def test_run():
