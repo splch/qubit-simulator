@@ -8,8 +8,9 @@ class QubitSimulator:
         self.num_qubits = num_qubits
         self.state_vector = np.zeros(2**num_qubits, dtype=complex)
         self.state_vector[0] = 1
+        self.circuit = []
 
-    def _apply_gate(self, gate, target_qubit, control_qubit=None):
+    def _apply_gate(self, gate_name, gate, target_qubit, control_qubit=None):
         # If there's a control qubit, create the controlled gate using the provided function
         if control_qubit is not None:
             operator = gates.create_controlled_gate(
@@ -25,26 +26,27 @@ class QubitSimulator:
                 )
         # Apply the operator to the state vector
         self.state_vector = operator @ self.state_vector
+        self.circuit.append((gate_name, target_qubit, control_qubit))
 
     def H(self, target_qubit):
-        self._apply_gate(gates.H, target_qubit)
+        self._apply_gate("H", gates.H, target_qubit)
 
     def T(self, target_qubit):
-        self._apply_gate(gates.T, target_qubit)
+        self._apply_gate("T", gates.T, target_qubit)
 
     def X(self, target_qubit):
-        self._apply_gate(gates.X, target_qubit)
+        self._apply_gate("X", gates.X, target_qubit)
 
     def CNOT(self, control_qubit, target_qubit):
-        self._apply_gate(gates.X, target_qubit, control_qubit)
+        self._apply_gate("X", gates.X, target_qubit, control_qubit)
 
     def U(self, target_qubit, theta, phi, lambda_):
         U = gates.U(theta, phi, lambda_)
-        self._apply_gate(U, target_qubit)
+        self._apply_gate("U", U, target_qubit)
 
     def CU(self, control_qubit, target_qubit, theta, phi, lambda_):
         U = gates.U(theta, phi, lambda_)
-        self._apply_gate(U, target_qubit, control_qubit)
+        self._apply_gate("U", U, target_qubit, control_qubit)
 
     def SWAP(self, qubit1, qubit2):
         self.CNOT(qubit1, qubit2)
@@ -59,3 +61,18 @@ class QubitSimulator:
     def run(self, shots=100):
         results = self.Measure(shots)
         return dict(collections.Counter(results))
+
+    def __str__(self):
+        string = "-" * (len(self.circuit) * 4 + 1) + "\n"
+        qubit_lines = ["|"] * self.num_qubits
+        for gate_name, target_qubit, control_qubit in self.circuit:
+            for i in range(self.num_qubits):
+                if control_qubit == i:
+                    qubit_lines[i] += " C |"
+                elif target_qubit == i:
+                    qubit_lines[i] += f" {gate_name} |"
+                else:
+                    qubit_lines[i] += "   |"
+        string += "\n".join(qubit_lines)
+        string += "\n" + "-" * (len(self.circuit) * 4 + 1)
+        return string

@@ -138,7 +138,7 @@ def test_gate_reversibility():
     simulator.H(0)
     # Apply U inverse
     U_inv = np.conjugate(gates.U(theta, phi, lambda_).T)
-    simulator._apply_gate(U_inv, 0)
+    simulator._apply_gate("U", U_inv, 0)
     assert np.allclose(simulator.state_vector, [1, 0])
 
 
@@ -150,21 +150,28 @@ def test_measure_probabilities():
     assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
 
 
-def apply_qft(simulator):
-    num_qubits = simulator.num_qubits
-    for target_qubit in range(num_qubits):
-        simulator.H(target_qubit)
-        for control_qubit in range(target_qubit + 1, num_qubits):
-            phase_angle = 2 * np.pi / (2 ** (control_qubit - target_qubit + 1))
-            simulator.CU(target_qubit, control_qubit, 0, 0, phase_angle)
-    # Swap qubits to match the desired output order
-    for i in range(num_qubits // 2):
-        j = num_qubits - i - 1
-        simulator.SWAP(i, j)
+def test_str():
+    simulator = QubitSimulator(3)
+    simulator.H(0)
+    simulator.CNOT(0, 2)
+    expected_string = "---------\n| H | C |\n|   |   |\n|   | X |\n---------"
+    assert str(simulator) == expected_string
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 5])
 def test_qft(num_qubits):
+    def apply_qft(simulator):
+        num_qubits = simulator.num_qubits
+        for target_qubit in range(num_qubits):
+            simulator.H(target_qubit)
+            for control_qubit in range(target_qubit + 1, num_qubits):
+                phase_angle = 2 * np.pi / (2 ** (control_qubit - target_qubit + 1))
+                simulator.CU(target_qubit, control_qubit, 0, 0, phase_angle)
+        # Swap qubits to match the desired output order
+        for i in range(num_qubits // 2):
+            j = num_qubits - i - 1
+            simulator.SWAP(i, j)
+
     simulator = QubitSimulator(num_qubits)
     # Create a random initial state vector and normalize it
     random_state = np.random.rand(2**num_qubits) + 1j * np.random.rand(
