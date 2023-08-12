@@ -58,4 +58,4 @@ class QubitSimulator:
 
     def run(self, shots=100):
         results = self.Measure(shots)
-        return collections.Counter(results)
+        return dict(collections.Counter(results))
