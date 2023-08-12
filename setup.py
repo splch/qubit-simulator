@@ -4,6 +4,8 @@ setup(
     name="qubit_simulator",
     version="0.0.1",
     description="A simple qubit simulator",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     author="Spencer Churchill",
     author_email="churchill@ionq.com",
     packages=find_packages(),
