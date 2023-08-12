@@ -1,17 +1,29 @@
 import numpy as np
+from typing import Union
 
 
-class gates:
+class Gates:
+    """
+    A class that represents the quantum gates.
+    """
+
     # Hadamard (H) gate
-    H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    H: np.ndarray = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
     # π/8 (T) gate
-    T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
+    T: np.ndarray = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
     # Pauli-X (NOT) gate
-    X = np.array([[0, 1], [1, 0]])
+    X: np.ndarray = np.array([[0, 1], [1, 0]])
 
-    # Generic (U) gate
     @staticmethod
-    def U(theta, phi, lambda_):
+    def U(theta: float, phi: float, lambda_: float) -> np.ndarray:
+        """
+        Generic (U) gate.
+
+        :param theta: Angle theta.
+        :param phi: Angle phi.
+        :param lambda_: Angle lambda.
+        :return: Unitary matrix representing the U gate.
+        """
         return np.array(
             [
                 [np.cos(theta), -np.exp(1j * lambda_) * np.sin(theta)],
@@ -23,7 +35,18 @@ class gates:
         )
 
     @staticmethod
-    def create_controlled_gate(gate, control_qubit, target_qubit, num_qubits):
+    def create_controlled_gate(
+        gate: np.ndarray, control_qubit: int, target_qubit: int, num_qubits: int
+    ) -> np.ndarray:
+        """
+        Creates a controlled gate.
+
+        :param gate: Matrix representing the gate.
+        :param control_qubit: Index of the control qubit.
+        :param target_qubit: Index of the target qubit.
+        :param num_qubits: Total number of qubits.
+        :return: Matrix representing the controlled gate.
+        """
         controlled_gate = np.eye(2**num_qubits, dtype=complex)
         for basis in range(2**num_qubits):
             basis_binary = format(basis, f"0{num_qubits}b")
