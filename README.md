@@ -1,6 +1,6 @@
 # Qubit Simulator
 
-Qubit Simulator is a simple and lightweight library that provides a quantum simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates such as Hadamard, Pauli-X, Controlled-Not, and generic unitary transformations.
+Qubit Simulator is a simple and lightweight library that provides a quantum simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates such as Hadamard, $\frac{\pi}{8}$, Controlled-Not, and generic unitary transformations.
 
 ## Installation
 
@@ -58,7 +58,7 @@ results = simulator.run(shots=100)
 Get a string representation of the circuit:
 
 ```python
-print(str(simulator))
+print(simulator)
 ```
 
 ```plaintext
