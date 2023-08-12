@@ -1,70 +1,78 @@
-# QubitSimulator Library
+# Qubit Simulator
 
-## Overview
-
-`QubitSimulator` is a simple and lightweight quantum computing simulator library implemented in Python. It provides basic functionalities for simulating quantum circuits with commonly used quantum gates, including Hadamard, $\frac{\pi}{8}$, and Controlled-NOT gates. You can also perform measurements on qubits and run the quantum circuit for multiple shots.
-
-## Features
-
-- [x] Universal gate set (H, T, CNOT)
-- [x] Generic gate (U)
-- [x] Measure in custom basis
-- [x] Circuit printing
+Qubit Simulator is a simple and lightweight library that provides a quantum simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates such as Hadamard, Pauli-X, Controlled-Not, and generic unitary transformations.
 
 ## Installation
 
-```shell
+Install Qubit Simulator via pip:
+
+```bash
 pip install qubit_simulator
 ```
 
 ## Usage
 
-### Initialization
+### Initializing the Simulator
 
-Initialize the QubitSimulator with the number of qubits:
+Create a simulator with a specified number of qubits:
 
 ```python
 from qubit_simulator import QubitSimulator
 
-simulator = QubitSimulator(2)
+simulator = QubitSimulator(3)
 ```
 
 ### Applying Gates
 
-Apply the H, T, and CNOT gates to the specified qubits:
+Apply various quantum gates to the qubits:
 
 ```python
-simulator.H(0)
-simulator.T(1)
-simulator.CNOT(0, 1)
+simulator.h(0)      # Hadamard gate
+simulator.x(1)      # Pauli-X gate
+simulator.cx(0, 1)  # Controlled-Not gate
+```
+
+### Custom Gates
+
+Define and apply custom gates using angles:
+
+```python
+import numpy as np
+
+theta, phi, lambda_ = np.pi/4, np.pi/3, np.pi/2
+simulator.u(0, theta, phi, lambda_)  # Generic gate
 ```
 
 ### Measurements
 
-Perform a measurement on the qubits:
+Measure the state of the qubits:
 
 ```python
-simulator.Measure()
+results = simulator.run(shots=100)
 ```
 
-> ['11']
+> {'100': 24, '110': 30, '000': 29, '010': 17}
 
-### Running the Circuit
+### Circuit Representation
 
-Run the quantum circuit for a specified number of shots:
+Get a string representation of the circuit:
 
 ```python
-simulator.run(shots=10)
+print(str(simulator))
 ```
 
-> {'11': 6, '00': 4}
-
-## Tests
-
-```shell
-python -m pytest
+```plaintext
+-----------------
+| H |   | C | U |
+|   | X | X |   |
+|   |   |   |   |
+-----------------
 ```
+
+## Testing
+
+Tests are included in the package to verify its functionality.
 
 ## License
 
-This library is open-source and available under the MIT License.
+This project is licensed under the MIT License.
