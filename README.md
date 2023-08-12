@@ -8,7 +8,7 @@
 
 - [x] Universal gate set (H, T, CNOT)
 - [x] Generic gate (U)
-- [ ] Measure in custom basis
+- [x] Measure in custom basis
 - [x] Circuit printing
 
 ## Installation
