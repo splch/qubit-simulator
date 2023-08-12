@@ -24,6 +24,8 @@ pip install qubit_simulator
 Initialize the QubitSimulator with the number of qubits:
 
 ```python
+from qubit_simulator import QubitSimulator
+
 simulator = QubitSimulator(2)
 ```
 
@@ -37,25 +39,25 @@ simulator.T(1)
 simulator.CNOT(0, 1)
 ```
 
-### Running the Circuit
-
-Run the quantum circuit for a specified number of shots:
-
-```python
-simulator.run(num_shots=10)
-```
-
-> ['00', '11', '11', '00', '11', '11', '11', '00', '00', '11']
-
 ### Measurements
 
 Perform a measurement on the qubits:
 
 ```python
-simulator.measure()
+simulator.Measure()
 ```
 
-> '11'
+> ['11']
+
+### Running the Circuit
+
+Run the quantum circuit for a specified number of shots:
+
+```python
+simulator.run(shots=10)
+```
+
+> {'11': 6, '00': 4}
 
 ## Tests
 
