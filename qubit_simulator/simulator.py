@@ -53,13 +53,16 @@ class QubitSimulator:
         self.CNOT(qubit2, qubit1)
         self.CNOT(qubit1, qubit2)
 
-    def Measure(self, shots=1):
-        probabilities = np.abs(self.state_vector) ** 2
+    def Measure(self, shots=1, basis=None):
+        state_vector = self.state_vector
+        if basis is not None:
+            state_vector = basis @ self.state_vector
+        probabilities = np.abs(state_vector) ** 2
         result = np.random.choice(2**self.num_qubits, p=probabilities, size=shots)
         return [format(r, f"0{self.num_qubits}b") for r in result]
 
-    def run(self, shots=100):
-        results = self.Measure(shots)
+    def run(self, shots=100, basis=None):
+        results = self.Measure(shots, basis)
         return dict(collections.Counter(results))
 
     def __str__(self):
