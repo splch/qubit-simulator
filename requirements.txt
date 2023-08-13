@@ -1,2 +1,1 @@
-numpy
-pytest
+numpy>=1.10.1
