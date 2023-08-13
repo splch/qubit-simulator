@@ -7,7 +7,7 @@ Qubit Simulator is a simple and lightweight library that provides a quantum simu
 Install Qubit Simulator via pip:
 
 ```bash
-pip install qubit_simulator
+pip install qubit-simulator
 ```
 
 ## Usage
