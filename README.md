@@ -28,8 +28,8 @@ Apply various quantum gates to the qubits:
 
 ```python
 simulator.h(0)      # Hadamard gate
-simulator.x(1)      # Pauli-X gate
-simulator.cx(0, 1)  # Controlled-Not gate
+simulator.t(1)      # π/8 gate
+simulator.cx(0, 2)  # Controlled-Not gate
 ```
 
 ### Custom Gates
@@ -40,7 +40,7 @@ Define and apply custom gates using angles:
 import numpy as np
 
 theta, phi, lambda_ = np.pi/4, np.pi/3, np.pi/2
-simulator.u(0, theta, phi, lambda_)  # Generic gate
+simulator.u(1, theta, phi, lambda_)  # Generic gate
 ```
 
 ### Measurements
@@ -51,7 +51,7 @@ Measure the state of the qubits:
 results = simulator.run(shots=100)
 ```
 
-> {'100': 24, '110': 30, '000': 29, '010': 17}
+> {'010': 24, '101': 28, '111': 25, '000': 23}
 
 ### Circuit Representation
 
@@ -63,15 +63,19 @@ print(simulator)
 
 ```plaintext
 -----------------
-| H |   | C | U |
-|   | X | X |   |
-|   |   |   |   |
+| H |   | C |   |
+|   | T |   | U |
+|   |   | X |   |
 -----------------
 ```
 
 ## Testing
 
-Tests are included in the package to verify its functionality.
+Tests are included in the package to verify its functionality:
+
+```shell
+python3 -m pytest tests/
+```
 
 ## License
 
