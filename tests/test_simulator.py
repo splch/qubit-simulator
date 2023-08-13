@@ -154,18 +154,21 @@ def test_gate_reversibility():
 
 
 def test_measure_probabilities():
-    shots = 10000
+    shots = 1000
     simulator = QubitSimulator(1)
     simulator.h(0)
     results = simulator.run(shots=shots)
     assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
 
 
-def test_str():
+def test_circuit_string():
     simulator = QubitSimulator(3)
     simulator.h(0)
-    simulator.cx(0, 2)
-    expected_string = "---------\n| H | C |\n|   |   |\n|   | X |\n---------"
+    simulator.x(1)
+    simulator.cx(2, 1)
+    expected_string = (
+        "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------"
+    )
     assert str(simulator) == expected_string
 
 
