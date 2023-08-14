@@ -14,7 +14,11 @@ class QubitSimulator:
         Initialize the simulator with given number of qubits.
 
         :param num_qubits: Number of qubits.
+        :raises ValueError: If the number of qubits is negative.
         """
+        if num_qubits < 0:
+            raise ValueError("Number of qubits must be non-negative.")
+
         self.num_qubits = num_qubits
         self.state_vector = np.zeros(2**num_qubits, dtype=complex)
         self.state_vector[0] = 1

@@ -14,6 +14,11 @@ def test_zero_qubits():
     assert simulator.state_vector[0] == 1
 
 
+def test_negative_qubits():
+    with pytest.raises(ValueError):
+        QubitSimulator(-1)  # Negative number of qubits is not allowed
+
+
 def test_x_gate():
     simulator = QubitSimulator(1)
     simulator.x(0)
@@ -96,13 +101,6 @@ def test_measure():
     assert result == ["1"]
 
 
-@pytest.mark.parametrize("shots", [-1, -10])
-def test_invalid_measurement_shots(shots):
-    simulator = QubitSimulator(1)
-    with pytest.raises(ValueError):
-        simulator.run(shots=shots)  # Negative shots are invalid
-
-
 def test_measure_multiple_shots():
     shots = 100
     simulator = QubitSimulator(1)
@@ -110,6 +108,13 @@ def test_measure_multiple_shots():
     results = simulator.measure(shots=shots)
     # Measure 100 1s
     assert results.count("1") == shots
+
+
+@pytest.mark.parametrize("shots", [-1, -10])
+def test_invalid_measurement_shots(shots):
+    simulator = QubitSimulator(1)
+    with pytest.raises(ValueError):
+        simulator.run(shots=shots)  # Negative shots are invalid
 
 
 def test_measure_without_gates():
@@ -181,6 +186,17 @@ def test_circuit_string():
         "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------"
     )
     assert str(simulator) == expected_string
+
+
+def test_complex_circuit():
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.u(1, np.pi / 4, np.pi / 4, np.pi / 2)
+    simulator.cx(2, 0)
+    simulator.cu(1, 2, np.pi / 2, np.pi / 4, np.pi / 8)
+    simulator.x(0)
+    simulator.run(shots=10)
+    # This test verifies the process rather than the final state, so no assertion is needed
 
 
 def test_bell_state():
