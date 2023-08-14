@@ -29,13 +29,13 @@ class QubitSimulator:
         :param target_qubit: Index of the target qubit to validate.
         :param control_qubit: Index of the control qubit to validate.
         :raises IndexError: If the qubit index is out of range.
-        :raises ValueError: If the control qubit and target qubit are the same.
         """
         if target_qubit < 0 or target_qubit >= self.num_qubits:
             raise IndexError(f"Target qubit index {target_qubit} out of range.")
-        if control_qubit is not None:
-            if control_qubit < 0 or control_qubit >= self.num_qubits:
-                raise IndexError(f"Control qubit index {control_qubit} out of range.")
+        if control_qubit is not None and (
+            control_qubit < 0 or control_qubit >= self.num_qubits
+        ):
+            raise IndexError(f"Control qubit index {control_qubit} out of range.")
 
     def _apply_gate(
         self,
