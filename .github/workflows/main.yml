@@ -1,4 +1,4 @@
-name: Pytest
+name: Qubit Simulator CI
 
 on: push
 
@@ -16,5 +16,10 @@ jobs:
       run: |
         pip install -U pip
         pip install -r requirements.txt
-    - name: Run tests
-      run: python -m pytest -vv tests/
+        pip install "black>=21.5b0" "coverage>=5.5"
+    - name: Format code with Black
+      run: python3 -m black *
+    - name: Run tests with coverage
+      run: python3 -m coverage run -m pytest -vv
+    - name: Report coverage
+      run: python3 -m coverage report -m

@@ -20,6 +20,25 @@ class QubitSimulator:
         self.state_vector[0] = 1
         self.circuit: List[Tuple[str, int, Optional[int]]] = []
 
+    def _validate_qubit_index(
+        self, target_qubit: int, control_qubit: Optional[int] = None
+    ):
+        """
+        Validates the qubit indices.
+
+        :param target_qubit: Index of the target qubit to validate.
+        :param control_qubit: Index of the control qubit to validate.
+        :raises IndexError: If the qubit index is out of range.
+        :raises ValueError: If the control qubit and target qubit are the same.
+        """
+        if target_qubit < 0 or target_qubit >= self.num_qubits:
+            raise IndexError(f"Target qubit index {target_qubit} out of range.")
+        if control_qubit is not None:
+            if control_qubit < 0 or control_qubit >= self.num_qubits:
+                raise IndexError(f"Control qubit index {control_qubit} out of range.")
+            if target_qubit == control_qubit:
+                raise ValueError("Control qubit and target qubit cannot be the same.")
+
     def _apply_gate(
         self,
         gate_name: str,
@@ -35,6 +54,8 @@ class QubitSimulator:
         :param target_qubit: Index of the target qubit.
         :param control_qubit: Index of the control qubit (if controlled gate).
         """
+        # Validate the target and control qubit indices
+        self._validate_qubit_index(target_qubit, control_qubit)
         if control_qubit is not None:
             operator = Gates.create_controlled_gate(
                 gate, control_qubit, target_qubit, self.num_qubits
@@ -113,17 +134,6 @@ class QubitSimulator:
         """
         U = Gates.U(theta, phi, lambda_)
         self._apply_gate("U", U, target_qubit, control_qubit)
-
-    def swap(self, qubit1: int, qubit2: int):
-        """
-        Swaps qubit1 and qubit2.
-
-        :param qubit1: Index of the first qubit.
-        :param qubit2: Index of the second qubit.
-        """
-        self.cx(qubit1, qubit2)
-        self.cx(qubit2, qubit1)
-        self.cx(qubit1, qubit2)
 
     def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
         """

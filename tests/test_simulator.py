@@ -8,6 +8,12 @@ def test_initial_state():
     assert np.allclose(simulator.state_vector, [1, 0, 0, 0, 0, 0, 0, 0])
 
 
+def test_zero_qubits():
+    simulator = QubitSimulator(0)
+    assert len(simulator.state_vector) == 1
+    assert simulator.state_vector[0] == 1
+
+
 def test_x_gate():
     simulator = QubitSimulator(1)
     simulator.x(0)
@@ -63,15 +69,14 @@ def test_cu_gate():
     assert np.allclose(simulator.state_vector, expected_result)
 
 
-def test_swap_gate():
+def test_cu_gate_no_effect():
+    theta = np.pi / 4
+    phi = np.pi / 3
+    lambda_ = np.pi / 2
     simulator = QubitSimulator(2)
-    simulator.state_vector = np.array(
-        [0, 1, 0, 0], dtype=complex
-    )  # Set the initial state to |01⟩
-    simulator.swap(0, 1)
-    # After swapping, the state should be |10⟩
-    expected_state = np.array([0, 0, 1, 0], dtype=complex)
-    assert np.allclose(simulator.state_vector, expected_state)
+    # Control qubit is |0⟩, so the CU gate should have no effect
+    simulator.cu(0, 1, theta, phi, lambda_)
+    assert np.allclose(simulator.state_vector, [1, 0, 0, 0])
 
 
 def test_target_control():
@@ -91,6 +96,18 @@ def test_measure():
     assert result == ["1"]
 
 
+def test_invalid_qubit_index():
+    simulator = QubitSimulator(1)
+    with pytest.raises(IndexError):
+        simulator.h(2)  # Index out of range
+
+
+def test_invalid_measurement_shots():
+    simulator = QubitSimulator(1)
+    with pytest.raises(ValueError):
+        simulator.run(shots=-5)  # Negative shots are invalid
+
+
 def test_measure_multiple_shots():
     shots = 100
     simulator = QubitSimulator(1)
@@ -98,6 +115,24 @@ def test_measure_multiple_shots():
     results = simulator.measure(shots=shots)
     # Measure 100 1s
     assert results.count("1") == shots
+
+
+def test_invalid_control_and_target_equal():
+    simulator = QubitSimulator(2)
+    with pytest.raises(ValueError):
+        simulator.cx(0, 0)  # Control and target qubits cannot be the same
+
+
+def test_invalid_control_and_target_index():
+    simulator = QubitSimulator(1)
+    with pytest.raises(IndexError):
+        simulator.cx(1, 0)  # Control qubit cannot be out of range
+
+
+def test_measure_without_gates():
+    simulator = QubitSimulator(2)
+    results = simulator.run(shots=100)
+    assert results == {"00": 100}
 
 
 def test_measure_custom_basis():
@@ -184,7 +219,9 @@ def test_qft(num_qubits):
         # Swap qubits to match the desired output order
         for i in range(num_qubits // 2):
             j = num_qubits - i - 1
-            simulator.swap(i, j)
+            simulator.cx(i, j)
+            simulator.cx(j, i)
+            simulator.cx(i, j)
 
     simulator = QubitSimulator(num_qubits)
     # Create a random initial state vector and normalize it
