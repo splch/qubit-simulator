@@ -18,7 +18,7 @@ jobs:
         pip install -r requirements.txt
         pip install "black>=21.5b0" "coverage>=5.5"
     - name: Format code with Black
-      run: python3 -m black *
+      run: python3 -m black *.py
     - name: Run tests with coverage
       run: python3 -m coverage run -m pytest -vv
     - name: Report coverage
