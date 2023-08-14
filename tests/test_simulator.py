@@ -36,14 +36,6 @@ def test_t_gate():
     assert np.allclose(simulator.state_vector, [0, 0.70710678 + 0.70710678j])
 
 
-def test_cx_gate():
-    simulator = QubitSimulator(2)
-    simulator.state_vector = [0, 0, 0, 1]  # Set the initial state to |11⟩
-    simulator.cx(0, 1)
-    # After applying the CNOT gate, the state should be |10⟩ (big-endian)
-    assert np.allclose(simulator.state_vector, [0, 0, 1, 0])
-
-
 def test_u_gate():
     theta = np.pi / 4
     phi = np.pi / 3
@@ -53,6 +45,14 @@ def test_u_gate():
     # Expected result obtained from the U matrix using the given parameters
     expected_result = Gates.U(theta, phi, lambda_) @ [1, 0]
     assert np.allclose(simulator.state_vector, expected_result)
+
+
+def test_cx_gate():
+    simulator = QubitSimulator(2)
+    simulator.state_vector = [0, 0, 0, 1]  # Set the initial state to |11⟩
+    simulator.cx(0, 1)
+    # After applying the CNOT gate, the state should be |10⟩ (big-endian)
+    assert np.allclose(simulator.state_vector, [0, 0, 1, 0])
 
 
 def test_cu_gate():
@@ -96,16 +96,11 @@ def test_measure():
     assert result == ["1"]
 
 
-def test_invalid_qubit_index():
-    simulator = QubitSimulator(1)
-    with pytest.raises(IndexError):
-        simulator.h(2)  # Index out of range
-
-
-def test_invalid_measurement_shots():
+@pytest.mark.parametrize("shots", [-1, -10])
+def test_invalid_measurement_shots(shots):
     simulator = QubitSimulator(1)
     with pytest.raises(ValueError):
-        simulator.run(shots=-5)  # Negative shots are invalid
+        simulator.run(shots=shots)  # Negative shots are invalid
 
 
 def test_measure_multiple_shots():
@@ -115,18 +110,6 @@ def test_measure_multiple_shots():
     results = simulator.measure(shots=shots)
     # Measure 100 1s
     assert results.count("1") == shots
-
-
-def test_invalid_control_and_target_equal():
-    simulator = QubitSimulator(2)
-    with pytest.raises(ValueError):
-        simulator.cx(0, 0)  # Control and target qubits cannot be the same
-
-
-def test_invalid_control_and_target_index():
-    simulator = QubitSimulator(1)
-    with pytest.raises(IndexError):
-        simulator.cx(1, 0)  # Control qubit cannot be out of range
 
 
 def test_measure_without_gates():
@@ -146,11 +129,58 @@ def test_measure_custom_basis():
     assert set(result) == {"0"}
 
 
+def test_measure_probabilities():
+    shots = 1000
+    simulator = QubitSimulator(1)
+    simulator.h(0)
+    results = simulator.run(shots=shots)
+    assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
+
+
+def test_invalid_qubit_index():
+    simulator = QubitSimulator(1)
+    with pytest.raises(IndexError):
+        simulator.h(2)  # Index out of range
+
+
+def test_invalid_control_and_target_index():
+    simulator = QubitSimulator(1)
+    with pytest.raises(IndexError):
+        simulator.cx(1, 0)  # Control qubit cannot be out of range
+
+
 def test_run():
     simulator = QubitSimulator(1)
     # Running the simulation 10 times should produce 10 results
     results = simulator.run(10)
     assert results == {"0": 10}
+
+
+def test_gate_reversibility():
+    theta = np.pi / 2
+    phi = np.pi / 4
+    lambda_ = np.pi / 3
+    simulator = QubitSimulator(1)
+    simulator.u(0, theta, phi, lambda_)
+    simulator.h(0)
+    simulator.x(0)
+    simulator.x(0)
+    simulator.h(0)
+    # Apply U inverse
+    U_inv = np.conjugate(Gates.U(theta, phi, lambda_).T)
+    simulator._apply_gate("U", U_inv, 0)
+    assert np.allclose(simulator.state_vector, [1, 0])
+
+
+def test_circuit_string():
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.x(1)
+    simulator.cx(2, 1)
+    expected_string = (
+        "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------"
+    )
+    assert str(simulator) == expected_string
 
 
 def test_bell_state():
@@ -170,41 +200,6 @@ def test_ghz_state():
     assert np.allclose(
         simulator.state_vector, [0.70710678, 0, 0, 0, 0, 0, 0, 0.70710678]
     )
-
-
-def test_gate_reversibility():
-    theta = np.pi / 2
-    phi = np.pi / 4
-    lambda_ = np.pi / 3
-    simulator = QubitSimulator(1)
-    simulator.u(0, theta, phi, lambda_)
-    simulator.h(0)
-    simulator.x(0)
-    simulator.x(0)
-    simulator.h(0)
-    # Apply U inverse
-    U_inv = np.conjugate(Gates.U(theta, phi, lambda_).T)
-    simulator._apply_gate("U", U_inv, 0)
-    assert np.allclose(simulator.state_vector, [1, 0])
-
-
-def test_measure_probabilities():
-    shots = 1000
-    simulator = QubitSimulator(1)
-    simulator.h(0)
-    results = simulator.run(shots=shots)
-    assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
-
-
-def test_circuit_string():
-    simulator = QubitSimulator(3)
-    simulator.h(0)
-    simulator.x(1)
-    simulator.cx(2, 1)
-    expected_string = (
-        "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------"
-    )
-    assert str(simulator) == expected_string
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 5])
