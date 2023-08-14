@@ -36,8 +36,6 @@ class QubitSimulator:
         if control_qubit is not None:
             if control_qubit < 0 or control_qubit >= self.num_qubits:
                 raise IndexError(f"Control qubit index {control_qubit} out of range.")
-            if target_qubit == control_qubit:
-                raise ValueError("Control qubit and target qubit cannot be the same.")
 
     def _apply_gate(
         self,
