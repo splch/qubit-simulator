@@ -228,6 +228,17 @@ def test_complex_circuit():
     # This test verifies the process rather than the final state, so no assertion is needed
 
 
+def test_complex_circuit():
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.u(1, np.pi / 4, np.pi / 4, np.pi / 2)
+    simulator.cx(2, 0)
+    simulator.cu(1, 2, np.pi / 2, np.pi / 4, np.pi / 8)
+    simulator.x(0)
+    simulator.run(shots=10)
+    # This test verifies the process rather than the final state, so no assertion is needed
+
+
 def test_bell_state():
     simulator = QubitSimulator(2)
     simulator.h(0)
