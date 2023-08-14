@@ -110,6 +110,19 @@ def test_measure_multiple_shots():
     assert results.count("1") == shots
 
 
+def test_non_unitary_gate():
+    simulator = QubitSimulator(1)
+    # Define a non-unitary matrix (conjugate transpose is not equal to its inverse)
+    non_unitary_gate = np.array([[2, 0], [0, 0.5]])
+    # Directly apply the non-unitary gate to the simulator
+    simulator._apply_gate("NON_UNITARY", non_unitary_gate, 0)
+    # Expected result after applying the non-unitary gate
+    expected_result = non_unitary_gate @ [1, 0]
+    assert np.allclose(simulator.state_vector, expected_result)
+    with pytest.raises(ValueError):
+        simulator.run()
+
+
 @pytest.mark.parametrize("shots", [-1, -10])
 def test_invalid_measurement_shots(shots):
     simulator = QubitSimulator(1)
@@ -132,6 +145,14 @@ def test_measure_custom_basis():
     # Measure in the X basis, which should result in the state |0⟩ in the X basis
     result = simulator.run(shots=10, basis=X_basis)
     assert set(result) == {"0"}
+
+
+def test_invalid_basis_transformation():
+    simulator = QubitSimulator(1)
+    # Define an invalid basis transformation (not unitary)
+    invalid_basis = np.array([[1, 2], [2, 1]])
+    with pytest.raises(ValueError):
+        simulator.run(basis=invalid_basis)
 
 
 def test_measure_probabilities():
@@ -177,14 +198,22 @@ def test_gate_reversibility():
     assert np.allclose(simulator.state_vector, [1, 0])
 
 
-def test_circuit_string():
-    simulator = QubitSimulator(3)
-    simulator.h(0)
-    simulator.x(1)
-    simulator.cx(2, 1)
-    expected_string = (
-        "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------"
-    )
+@pytest.mark.parametrize(
+    "num_qubits, expected_string",
+    [
+        (0, "-\n\n-"),
+        (
+            3,
+            "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------",
+        ),
+    ],
+)
+def test_circuit_string(num_qubits, expected_string):
+    simulator = QubitSimulator(num_qubits)
+    if num_qubits == 3:
+        simulator.h(0)
+        simulator.x(1)
+        simulator.cx(2, 1)
     assert str(simulator) == expected_string
 
 
