@@ -198,9 +198,7 @@ def test_gate_reversibility():
 
 
 def test_random_unitary_gate_inverse():
-    # Number of qubits
-    num_qubits = 1
-    simulator = QubitSimulator(num_qubits)
+    simulator = QubitSimulator(1)
     # Generate a random unitary matrix using QR decomposition
     random_matrix = np.random.rand(2, 2) + 1j * np.random.rand(2, 2)
     random_unitary_gate, _ = np.linalg.qr(random_matrix)
@@ -213,10 +211,14 @@ def test_random_unitary_gate_inverse():
 @pytest.mark.parametrize(
     "num_qubits, expected_string",
     [
-        (0, "-\n\n-"),
+        (0, "-\n-"),
         (
             3,
-            "-------------\n| H |   |   |\n|   | X | X |\n|   |   | C |\n-------------",
+            "-----------------------------------------------------------------------------------------\n"
+            "|          H          |                     |                     |          @          |\n"
+            "|                     |          X          |          X          | U(0.45, 0.63, 1.05) |\n"
+            "|                     |                     |          @          |                     |\n"
+            "-----------------------------------------------------------------------------------------",
         ),
     ],
 )
@@ -226,6 +228,8 @@ def test_circuit_string(num_qubits, expected_string):
         simulator.h(0)
         simulator.x(1)
         simulator.cx(2, 1)
+        simulator.cu(0, 1, np.pi / 7, np.pi / 5, np.pi / 3)
+    print(simulator)
     assert str(simulator) == expected_string
 
 
