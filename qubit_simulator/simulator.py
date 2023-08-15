@@ -203,16 +203,18 @@ class QubitSimulator:
             (len(gate_name) + 3 for gate_name, _, _ in self.circuit), 1
         )
         lines = ["-" * separator_length]
-        qubit_lines = ["|"] * self.num_qubits
+        qubit_lines = [["|"] for _ in range(self.num_qubits)]
         for gate_name, target_qubit, control_qubit in self.circuit:
-            gate_name_str = f" {gate_name} ".center(len(gate_name) + 2, " ")
+            gate_name_length = len(gate_name)
+            gate_name_str = f" {gate_name} ".center(gate_name_length + 2, " ")
             for i in range(self.num_qubits):
                 if control_qubit == i:
-                    qubit_lines[i] += " @ ".center(len(gate_name) + 2, " ") + "|"
+                    qubit_lines[i].append(" @ ".center(gate_name_length + 2, " "))
                 elif target_qubit == i:
-                    qubit_lines[i] += gate_name_str + "|"
+                    qubit_lines[i].append(gate_name_str)
                 else:
-                    qubit_lines[i] += " " * (len(gate_name) + 2) + "|"
-        lines += qubit_lines
+                    qubit_lines[i].append(" " * (gate_name_length + 2))
+                qubit_lines[i].append("|")
+        lines += ["".join(line) for line in qubit_lines]
         lines += ["-" * separator_length]
         return "\n".join(lines)
