@@ -199,24 +199,20 @@ class QubitSimulator:
 
         :return: String representing the circuit.
         """
-        max_gate_name_length = max((len(gate[0]) for gate in self.circuit), default=0)
-        max_gate_name_length = max(
-            max_gate_name_length, 1
-        )  # Ensure a minimum width of 1
-        separator_length = (max_gate_name_length + 3) * len(self.circuit) + 1
+        separator_length = sum(
+            (len(gate_name) + 3 for gate_name, _, _ in self.circuit), 1
+        )
         lines = ["-" * separator_length]
         qubit_lines = ["|"] * self.num_qubits
-
         for gate_name, target_qubit, control_qubit in self.circuit:
-            gate_name_str = f" {gate_name} ".center(max_gate_name_length + 2, " ")
+            gate_name_str = f" {gate_name} ".center(len(gate_name) + 2, " ")
             for i in range(self.num_qubits):
                 if control_qubit == i:
-                    qubit_lines[i] += " @ ".center(max_gate_name_length + 2, " ") + "|"
+                    qubit_lines[i] += " @ ".center(len(gate_name) + 2, " ") + "|"
                 elif target_qubit == i:
                     qubit_lines[i] += gate_name_str + "|"
                 else:
-                    qubit_lines[i] += " " * (max_gate_name_length + 2) + "|"
-
+                    qubit_lines[i] += " " * (len(gate_name) + 2) + "|"
         lines += qubit_lines
         lines += ["-" * separator_length]
         return "\n".join(lines)
