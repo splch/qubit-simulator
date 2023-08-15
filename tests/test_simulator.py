@@ -193,8 +193,20 @@ def test_gate_reversibility():
     simulator.x(0)
     simulator.h(0)
     # Apply U inverse
-    U_inv = np.conjugate(Gates.U(theta, phi, lambda_).T)
-    simulator._apply_gate("U", U_inv, 0)
+    simulator.u(0, theta, phi, lambda_, inverse=True)
+    assert np.allclose(simulator.state_vector, [1, 0])
+
+
+def test_random_unitary_gate_inverse():
+    # Number of qubits
+    num_qubits = 1
+    simulator = QubitSimulator(num_qubits)
+    # Generate a random unitary matrix using QR decomposition
+    random_matrix = np.random.rand(2, 2) + 1j * np.random.rand(2, 2)
+    random_unitary_gate, _ = np.linalg.qr(random_matrix)
+    simulator._apply_gate("RANDOM_UNITARY", random_unitary_gate, 0)
+    simulator._apply_gate("RANDOM_UNITARY_INV", random_unitary_gate.conj().T, 0)
+    # The final state should be the same as the initial state
     assert np.allclose(simulator.state_vector, [1, 0])
 
 
