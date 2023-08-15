@@ -128,7 +128,7 @@ class QubitSimulator:
             else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
         )
         gate_name = (
-            f"{'U' if not inverse else 'U_INV'}({theta}, {phi}, {lambda_})"
+            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
             if not inverse
             else "U_INV"
         )
