@@ -28,7 +28,7 @@ Apply various quantum gates to the qubits:
 
 ```python
 simulator.h(0)      # Hadamard gate
-simulator.t(1)      # π/8 gate
+simulator.t(0)      # π/8 gate
 simulator.cx(0, 2)  # Controlled-Not gate
 ```
 
@@ -51,7 +51,7 @@ Measure the state of the qubits:
 results = simulator.run(shots=100)
 ```
 
-> {'010': 24, '101': 28, '111': 25, '000': 23}
+> {'010': 27, '111': 30, '000': 23, '101': 20}
 
 ### Circuit Representation
 
@@ -62,11 +62,11 @@ print(simulator)
 ```
 
 ```plaintext
------------------
-| H |   | C |   |
-|   | T |   | U |
-|   |   | X |   |
------------------
+-----------------------------------------------------------------------------------------
+|          H          |          T          |          @          |                     |
+|                     |                     |                     | U(0.79, 1.05, 1.57) |
+|                     |                     |          X          |                     |
+-----------------------------------------------------------------------------------------
 ```
 
 ## Testing
