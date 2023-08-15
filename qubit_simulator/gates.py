@@ -71,3 +71,13 @@ class Gates:
                     1 - int(basis_binary[target_qubit]),
                 ]
         return controlled_gate
+
+    @staticmethod
+    def create_inverse_gate(gate: np.ndarray) -> np.ndarray:
+        """
+        Creates an inverse gate.
+
+        :param gate: Matrix representing the gate.
+        :return: Matrix representing the inverse gate.
+        """
+        return np.conjugate(gate.T)

@@ -105,7 +105,14 @@ class QubitSimulator:
         """
         self._apply_gate("X", Gates.X, target_qubit, control_qubit)
 
-    def u(self, target_qubit: int, theta: float, phi: float, lambda_: float):
+    def u(
+        self,
+        target_qubit: int,
+        theta: float,
+        phi: float,
+        lambda_: float,
+        inverse: Optional[bool] = False,
+    ):
         """
         Applies Generic gate to the target qubit.
 
@@ -113,9 +120,19 @@ class QubitSimulator:
         :param theta: Angle theta.
         :param phi: Angle phi.
         :param lambda_: Angle lambda.
+        :param inverse: Whether to apply the inverse of the gate.
         """
-        U = Gates.U(theta, phi, lambda_)
-        self._apply_gate("U", U, target_qubit)
+        gate = (
+            Gates.U(theta, phi, lambda_)
+            if not inverse
+            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+        )
+        gate_name = (
+            f"{'U' if not inverse else 'U_INV'}({theta}, {phi}, {lambda_})"
+            if not inverse
+            else "U_INV"
+        )
+        self._apply_gate(gate_name, gate, target_qubit)
 
     def cu(
         self,
@@ -124,6 +141,7 @@ class QubitSimulator:
         theta: float,
         phi: float,
         lambda_: float,
+        inverse: Optional[bool] = False,
     ):
         """
         Applies Controlled-Generic gate to the target qubit.
@@ -133,9 +151,19 @@ class QubitSimulator:
         :param theta: Angle theta.
         :param phi: Angle phi.
         :param lambda_: Angle lambda.
+        :param inverse: Whether to apply the inverse of the gate.
         """
-        U = Gates.U(theta, phi, lambda_)
-        self._apply_gate("U", U, target_qubit, control_qubit)
+        gate = (
+            Gates.U(theta, phi, lambda_)
+            if not inverse
+            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+        )
+        gate_name = (
+            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
+            if not inverse
+            else "U_INV"
+        )
+        self._apply_gate(gate_name, gate, target_qubit, control_qubit)
 
     def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
         """
@@ -171,16 +199,24 @@ class QubitSimulator:
 
         :return: String representing the circuit.
         """
-        string = "-" * (len(self.circuit) * 4 + 1) + "\n"
+        max_gate_name_length = max((len(gate[0]) for gate in self.circuit), default=0)
+        max_gate_name_length = max(
+            max_gate_name_length, 1
+        )  # Ensure a minimum width of 1
+        separator_length = (max_gate_name_length + 3) * len(self.circuit) + 1
+        lines = ["-" * separator_length]
         qubit_lines = ["|"] * self.num_qubits
+
         for gate_name, target_qubit, control_qubit in self.circuit:
+            gate_name_str = f" {gate_name} ".center(max_gate_name_length + 2, " ")
             for i in range(self.num_qubits):
                 if control_qubit == i:
-                    qubit_lines[i] += " C |"
+                    qubit_lines[i] += " @ ".center(max_gate_name_length + 2, " ") + "|"
                 elif target_qubit == i:
-                    qubit_lines[i] += f" {gate_name} |"
+                    qubit_lines[i] += gate_name_str + "|"
                 else:
-                    qubit_lines[i] += "   |"
-        string += "\n".join(qubit_lines)
-        string += "\n" + "-" * (len(self.circuit) * 4 + 1)
-        return string
+                    qubit_lines[i] += " " * (max_gate_name_length + 2) + "|"
+
+        lines += qubit_lines
+        lines += ["-" * separator_length]
+        return "\n".join(lines)
