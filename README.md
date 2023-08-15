@@ -29,7 +29,7 @@ Apply various quantum gates to the qubits:
 ```python
 simulator.h(0)      # Hadamard gate
 simulator.t(0)      # π/8 gate
-simulator.cx(0, 2)  # Controlled-Not gate
+simulator.cx(0, 1)  # Controlled-Not gate
 ```
 
 ### Custom Gates
@@ -40,7 +40,7 @@ Define and apply custom gates using angles:
 import numpy as np
 
 theta, phi, lambda_ = np.pi/4, np.pi/3, np.pi/2
-simulator.u(1, theta, phi, lambda_)  # Generic gate
+simulator.u(2, theta, phi, lambda_)  # Generic gate
 ```
 
 ### Measurements
@@ -51,7 +51,7 @@ Measure the state of the qubits:
 results = simulator.run(shots=100)
 ```
 
-> {'010': 27, '111': 30, '000': 23, '101': 20}
+> {'000': 23, '111': 32, '001': 25, '110': 20}
 
 ### Circuit Representation
 
@@ -62,11 +62,11 @@ print(simulator)
 ```
 
 ```plaintext
------------------------------------------------------------------------------------------
-|          H          |          T          |          @          |                     |
-|                     |                     |                     | U(0.79, 1.05, 1.57) |
-|                     |                     |          X          |                     |
------------------------------------------------------------------------------------------
+-----------------------------------
+| H | T | @ |                     |
+|   |   | X |                     |
+|   |   |   | U(0.79, 1.05, 1.57) |
+-----------------------------------
 ```
 
 ## Testing
