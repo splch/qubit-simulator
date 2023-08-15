@@ -216,7 +216,7 @@ def test_random_unitary_gate_inverse():
             3,
             "-----------------------------------------------------------------------------------------\n"
             "|          H          |                     |                     |          @          |\n"
-            "|                     |          X          |          X          | U(0.45, 0.63, 1.05) |\n"
+            "|                     |          X          |          X          | U(1.05, 0.63, 0.45) |\n"
             "|                     |                     |          @          |                     |\n"
             "-----------------------------------------------------------------------------------------",
         ),
@@ -228,8 +228,7 @@ def test_circuit_string(num_qubits, expected_string):
         simulator.h(0)
         simulator.x(1)
         simulator.cx(2, 1)
-        simulator.cu(0, 1, np.pi / 7, np.pi / 5, np.pi / 3)
-    print(simulator)
+        simulator.cu(0, 1, np.pi / 3, np.pi / 5, np.pi / 7)
     assert str(simulator) == expected_string
 
 
