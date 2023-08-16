@@ -174,7 +174,10 @@ class QubitSimulator:
         :param shots: Number of measurements.
         :param basis: Optional basis transformation.
         :return: List of measurement results.
+        :raises ValueError: If the number of shots is negative.
         """
+        if shots < 0:
+            raise ValueError("Number of shots must be non-negative.")
         state_vector = self.state_vector
         if basis is not None:
             state_vector = basis @ self.state_vector
