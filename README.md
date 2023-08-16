@@ -71,7 +71,7 @@ print(simulator)
 
 ## Testing
 
-Tests are included in the package to verify its functionality:
+Tests are included in the package to verify its functionality and provide more advanced examples:
 
 ```shell
 python3 -m pytest tests/
