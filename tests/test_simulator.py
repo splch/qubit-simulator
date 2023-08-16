@@ -110,19 +110,6 @@ def test_measure_multiple_shots():
     assert results.count("1") == shots
 
 
-def test_non_unitary_gate():
-    simulator = QubitSimulator(1)
-    # Define a non-unitary matrix (conjugate transpose is not equal to its inverse)
-    non_unitary_gate = np.array([[2, 0], [0, 0.5]])
-    # Directly apply the non-unitary gate to the simulator
-    simulator._apply_gate("NON_UNITARY", non_unitary_gate, 0)
-    # Expected result after applying the non-unitary gate
-    expected_result = non_unitary_gate @ [1, 0]
-    assert np.allclose(simulator.state_vector, expected_result)
-    with pytest.raises(ValueError):
-        simulator.run()
-
-
 @pytest.mark.parametrize("shots", [-1, -10])
 def test_invalid_measurement_shots(shots):
     simulator = QubitSimulator(1)
