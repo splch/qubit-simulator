@@ -58,6 +58,8 @@ class QubitSimulator:
         """
         # Validate the target and control qubit indices
         self._validate_qubit_index(target_qubit, control_qubit)
+        # Validate the gate
+        Gates._validate_gate(gate)
         if control_qubit is not None:
             operator = Gates.create_controlled_gate(
                 gate, control_qubit, target_qubit, self.num_qubits

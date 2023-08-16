@@ -81,3 +81,18 @@ class Gates:
         :return: Matrix representing the inverse gate.
         """
         return np.conjugate(gate.T)
+
+    @staticmethod
+    def _validate_gate(gate: np.ndarray):
+        """
+        Validates the gate.
+
+        :param gate: Matrix representing the gate.
+        :raises ValueError: If the gate is invalid.
+        """
+        if not np.allclose(
+            gate @ Gates.create_inverse_gate(gate), np.eye(gate.shape[0])
+        ):
+            raise ValueError(
+                "The gate must be unitary. Its conjugate transpose must be equal to its inverse."
+            )
