@@ -111,7 +111,7 @@ def test_measure_multiple_shots():
 
 
 @pytest.mark.parametrize("shots", [-1, -10])
-def test_invalid_measurement_shots(shots):
+def test_negative_shots(shots):
     simulator = QubitSimulator(1)
     with pytest.raises(ValueError):
         simulator.run(shots=shots)  # Negative shots are invalid
