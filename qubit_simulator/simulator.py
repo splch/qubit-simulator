@@ -223,3 +223,6 @@ class QubitSimulator:
         lines += ["".join(line) for line in qubit_lines]
         lines += ["-" * separator_length]
         return "\n".join(lines)
+
+    def __sizeof__(self) -> int:
+        return self.state_vector.nbytes
