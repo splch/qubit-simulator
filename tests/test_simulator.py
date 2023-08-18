@@ -251,16 +251,13 @@ def test_ghz_state():
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 5])
 def test_qft(num_qubits):
-    def reorder_array(arr):
-        return np.concatenate(([arr[0]], np.flip(arr[1:])))
-
     def apply_qft(simulator):
         num_qubits = simulator.num_qubits
         for target_qubit in range(num_qubits):
             simulator.h(target_qubit)
             for control_qubit in range(target_qubit + 1, num_qubits):
                 phase_angle = 2 * np.pi / (2 ** (control_qubit - target_qubit + 1))
-                simulator.cu(target_qubit, control_qubit, 0, phase_angle, 0)
+                simulator.cu(control_qubit, target_qubit, 0, -phase_angle, 0)
         # Swap qubits to match the desired output order
         for i in range(num_qubits // 2):
             j = num_qubits - i - 1
@@ -281,4 +278,4 @@ def test_qft(num_qubits):
     # Compute the expected result using NumPy's FFT and normalize
     fft_result = np.fft.fft(random_state) / np.sqrt(2**num_qubits)
     # Compare the state vectors
-    assert np.allclose(reorder_array(simulator.state_vector), fft_result)
+    assert np.allclose(simulator.state_vector, fft_result)
