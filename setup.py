@@ -9,7 +9,7 @@ setup(
     author="Spencer Churchill",
     author_email="churchill@ionq.com",
     packages=find_packages(),
-    install_requires=open("requirements.txt").readlines(),
+    install_requires=["numpy>=1.16.0"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
