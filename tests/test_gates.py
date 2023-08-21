@@ -4,9 +4,10 @@ from qubit_simulator import Gates
 
 
 def test_create_inverse_gate():
-    X = Gates.X
-    X_inv = Gates.create_inverse_gate(X)
-    assert np.allclose(X @ X_inv, np.eye(2))
+    random_matrix = np.random.rand(2, 2) + 1j * np.random.rand(2, 2)
+    random_unitary_gate, _ = np.linalg.qr(random_matrix)
+    inverse_gate = Gates.create_inverse_gate(random_unitary_gate)
+    assert np.allclose(random_unitary_gate @ inverse_gate, np.eye(2))
 
 
 def test_create_controlled_gate():
