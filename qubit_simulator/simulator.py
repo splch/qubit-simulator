@@ -7,7 +7,7 @@ from .gates import Gates
 
 class QubitSimulator:
     """
-    A class that represents a quantum simulator.
+    A class that represents a qubit simulator.
     """
 
     def __init__(self, num_qubits: int):
@@ -198,6 +198,12 @@ class QubitSimulator:
         """
         results = self.measure(shots, basis)
         return dict(Counter(results))
+
+    def reset(self):
+        """
+        Resets the simulator to its initial state.
+        """
+        self.__init__(self.num_qubits)
 
     def __str__(self) -> str:
         """

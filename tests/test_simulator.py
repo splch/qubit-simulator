@@ -9,13 +9,41 @@ def test_initial_state():
     assert np.allclose(simulator.state_vector, [1, 0, 0, 0, 0, 0, 0, 0])
 
 
+def test_initialization_complex_states():
+    simulator = QubitSimulator(2)
+    simulator.state_vector = [0.5, 0.5, 0.5, 0.5]
+    simulator.x(0)
+    assert np.allclose(simulator.state_vector, [0.5, 0.5, 0.5, 0.5])
+
+
+def test_large_number_of_qubits():
+    num_qubits = 20
+    simulator = QubitSimulator(num_qubits)
+    assert len(simulator.state_vector) == 2**num_qubits
+
+
+def test_circuit_reset():
+    simulator = QubitSimulator(1)
+    simulator.x(0)
+    simulator.reset()
+    assert np.allclose(simulator.state_vector, [1, 0])
+
+
 def test_getsize():
     simulator = QubitSimulator(3)
     # Apply some gates to make the instance more complex
     simulator.h(0)
+    simulator.u(1, np.pi / 4, np.pi / 4, np.pi / 2)
     simulator.cx(1, 2)
-    simulator.u(0, np.pi / 4, np.pi / 4, np.pi / 2)
     assert simulator.__getsize__() == 412
+
+
+def test_getsize_relative():
+    simulator = QubitSimulator(2)
+    initial_size = simulator.__getsize__()
+    simulator.h(0)
+    simulator.cx(0, 1)
+    assert simulator.__getsize__() > initial_size
 
 
 def test_zero_qubits():
@@ -60,6 +88,16 @@ def test_u_gate():
     # Expected result obtained from the U matrix using the given parameters
     expected_result = Gates.U(theta, phi, lambda_) @ [1, 0]
     assert np.allclose(simulator.state_vector, expected_result)
+
+
+@pytest.mark.parametrize(
+    "theta,phi,lambda_", [(0, 0, 0), (2 * np.pi, 2 * np.pi, 2 * np.pi)]
+)
+def test_u_gate_edge_cases(theta, phi, lambda_):
+    simulator = QubitSimulator(1)
+    simulator.u(0, theta, phi, lambda_)
+    # State vector should be |0⟩
+    assert np.allclose(simulator.state_vector, [1, 0])
 
 
 def test_cx_gate():
@@ -127,6 +165,13 @@ def test_negative_shots(shots):
         simulator.run(shots=shots)  # Negative shots are invalid
 
 
+def test_error_messages():
+    with pytest.raises(ValueError, match="Number of qubits must be non-negative."):
+        QubitSimulator(-1)
+    with pytest.raises(ValueError, match="Number of shots must be non-negative."):
+        QubitSimulator(1).measure(-1)
+
+
 def test_measure_without_gates():
     simulator = QubitSimulator(2)
     results = simulator.run(shots=100)
@@ -142,6 +187,14 @@ def test_measure_custom_basis():
     # Measure in the X basis, which should result in the state |0⟩ in the X basis
     result = simulator.run(shots=10, basis=X_basis)
     assert set(result) == {"0"}
+
+
+def test_measure_custom_basis_valid():
+    simulator = QubitSimulator(1)
+    Z_basis = np.array([[1, 0], [0, -1]])
+    simulator.x(0)
+    result = simulator.measure(basis=Z_basis)
+    assert result == ["1"]
 
 
 def test_invalid_basis_transformation():
