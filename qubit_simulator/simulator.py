@@ -42,6 +42,20 @@ class QubitSimulator:
         ):
             raise IndexError(f"Control qubit index {control_qubit} out of range.")
 
+    def _get_gate_name(
+        self, theta: float, phi: float, lambda_: float, inverse: bool
+    ) -> str:
+        """
+        Constructs the name for a U gate or its inverse.
+
+        :param theta: Angle theta.
+        :param phi: Angle phi.
+        :param lambda_: Angle lambda.
+        :param inverse: Whether the gate is an inverse.
+        :return: String representing the gate name.
+        """
+        return f"U{'†' if inverse else ''}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
+
     def _apply_gate(
         self,
         gate_name: str,
@@ -126,16 +140,13 @@ class QubitSimulator:
         :param inverse: Whether to apply the inverse of the gate.
         """
         gate = (
-            Gates.U(theta, phi, lambda_)
-            if not inverse
-            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            if inverse
+            else Gates.U(theta, phi, lambda_)
         )
-        gate_name = (
-            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
-            if not inverse
-            else "U_INV"
+        self._apply_gate(
+            self._get_gate_name(theta, phi, lambda_, inverse), gate, target_qubit
         )
-        self._apply_gate(gate_name, gate, target_qubit)
 
     def cu(
         self,
@@ -157,16 +168,16 @@ class QubitSimulator:
         :param inverse: Whether to apply the inverse of the gate.
         """
         gate = (
-            Gates.U(theta, phi, lambda_)
-            if not inverse
-            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            if inverse
+            else Gates.U(theta, phi, lambda_)
         )
-        gate_name = (
-            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
-            if not inverse
-            else "U_INV"
+        self._apply_gate(
+            self._get_gate_name(theta, phi, lambda_, inverse),
+            gate,
+            target_qubit,
+            control_qubit,
         )
-        self._apply_gate(gate_name, gate, target_qubit, control_qubit)
 
     def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
         """
