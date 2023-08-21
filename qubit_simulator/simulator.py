@@ -1,5 +1,6 @@
 import numpy as np
 from collections import Counter
+from sys import getsizeof
 from typing import Optional, List, Tuple, Dict
 from .gates import Gates
 
@@ -224,5 +225,10 @@ class QubitSimulator:
         lines += ["-" * separator_length]
         return "\n".join(lines)
 
-    def __sizeof__(self) -> int:
-        return self.state_vector.nbytes
+    def __getsize__(self) -> int:
+        """
+        Returns the total memory size of the instance.
+
+        :return: Total memory size in bytes.
+        """
+        return getsizeof(self) + sum(map(getsizeof, self.__dict__.values()))
