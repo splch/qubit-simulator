@@ -1,11 +1,21 @@
 import pytest
 import numpy as np
+from sys import getsizeof
 from qubit_simulator import QubitSimulator, Gates
 
 
 def test_initial_state():
     simulator = QubitSimulator(3)
     assert np.allclose(simulator.state_vector, [1, 0, 0, 0, 0, 0, 0, 0])
+
+
+def test_getsize():
+    simulator = QubitSimulator(3)
+    # Apply some gates to make the instance more complex
+    simulator.h(0)
+    simulator.cx(1, 2)
+    simulator.u(0, np.pi / 4, np.pi / 4, np.pi / 2)
+    assert simulator.__getsize__() == 412
 
 
 def test_zero_qubits():
