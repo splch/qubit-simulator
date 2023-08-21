@@ -202,10 +202,23 @@ def test_invalid_qubit_index():
         simulator.h(2)  # Index out of range
 
 
+def test_reset_invalid_qubit_index():
+    simulator = QubitSimulator(3)
+    simulator.num_qubits = -1  # Set an invalid value for num_qubits
+    with pytest.raises(ValueError):
+        simulator.reset()  # Resetting with an invalid value should raise an error
+
+
 def test_invalid_control_and_target_index():
     simulator = QubitSimulator(1)
     with pytest.raises(IndexError):
         simulator.cx(1, 0)  # Control qubit cannot be out of range
+
+
+def test_apply_gate_invalid_control_qubit():
+    simulator = QubitSimulator(1)
+    with pytest.raises(IndexError):
+        simulator._apply_gate("X", Gates.X, target_qubit=0, control_qubit=2)
 
 
 def test_error_messages():

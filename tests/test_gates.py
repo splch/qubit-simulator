@@ -21,3 +21,11 @@ def test_non_unitary_gate():
     non_unitary_gate = np.array([[2, 0], [0, 0.5]])
     with pytest.raises(ValueError):
         Gates._validate_gate(non_unitary_gate)
+
+
+def test_create_controlled_gate_invalid_qubits():
+    # Define a scenario where the control and target qubits are out of range
+    with pytest.raises(IndexError):
+        Gates.create_controlled_gate(
+            Gates.X, control_qubit=4, target_qubit=5, num_qubits=3
+        )
