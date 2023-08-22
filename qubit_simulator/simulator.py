@@ -1,12 +1,13 @@
 import numpy as np
 from collections import Counter
+from sys import getsizeof
 from typing import Optional, List, Tuple, Dict
 from .gates import Gates
 
 
 class QubitSimulator:
     """
-    A class that represents a quantum simulator.
+    A class that represents a qubit simulator.
     """
 
     def __init__(self, num_qubits: int):
@@ -40,6 +41,20 @@ class QubitSimulator:
             control_qubit < 0 or control_qubit >= self.num_qubits
         ):
             raise IndexError(f"Control qubit index {control_qubit} out of range.")
+
+    def _get_gate_name(
+        self, theta: float, phi: float, lambda_: float, inverse: bool
+    ) -> str:
+        """
+        Constructs the name for a U gate or its inverse.
+
+        :param theta: Angle theta.
+        :param phi: Angle phi.
+        :param lambda_: Angle lambda.
+        :param inverse: Whether the gate is an inverse.
+        :return: String representing the gate name.
+        """
+        return f"U{'†' if inverse else ''}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
 
     def _apply_gate(
         self,
@@ -125,16 +140,13 @@ class QubitSimulator:
         :param inverse: Whether to apply the inverse of the gate.
         """
         gate = (
-            Gates.U(theta, phi, lambda_)
-            if not inverse
-            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            if inverse
+            else Gates.U(theta, phi, lambda_)
         )
-        gate_name = (
-            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
-            if not inverse
-            else "U_INV"
+        self._apply_gate(
+            self._get_gate_name(theta, phi, lambda_, inverse), gate, target_qubit
         )
-        self._apply_gate(gate_name, gate, target_qubit)
 
     def cu(
         self,
@@ -156,16 +168,16 @@ class QubitSimulator:
         :param inverse: Whether to apply the inverse of the gate.
         """
         gate = (
-            Gates.U(theta, phi, lambda_)
-            if not inverse
-            else Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
+            if inverse
+            else Gates.U(theta, phi, lambda_)
         )
-        gate_name = (
-            f"{'U' if not inverse else 'U_INV'}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
-            if not inverse
-            else "U_INV"
+        self._apply_gate(
+            self._get_gate_name(theta, phi, lambda_, inverse),
+            gate,
+            target_qubit,
+            control_qubit,
         )
-        self._apply_gate(gate_name, gate, target_qubit, control_qubit)
 
     def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
         """
@@ -198,6 +210,12 @@ class QubitSimulator:
         results = self.measure(shots, basis)
         return dict(Counter(results))
 
+    def reset(self):
+        """
+        Resets the simulator to its initial state.
+        """
+        self.__init__(self.num_qubits)
+
     def __str__(self) -> str:
         """
         Returns a string representation of the circuit.
@@ -224,5 +242,10 @@ class QubitSimulator:
         lines += ["-" * separator_length]
         return "\n".join(lines)
 
-    def __sizeof__(self) -> int:
-        return self.state_vector.nbytes
+    def __getsize__(self) -> int:
+        """
+        Returns the total memory size of the instance.
+
+        :return: Total memory size in bytes.
+        """
+        return getsizeof(self) + sum(map(getsizeof, self.__dict__.values()))

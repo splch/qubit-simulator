@@ -4,9 +4,10 @@ from qubit_simulator import Gates
 
 
 def test_create_inverse_gate():
-    X = Gates.X
-    X_inv = Gates.create_inverse_gate(X)
-    assert np.allclose(X @ X_inv, np.eye(2))
+    random_matrix = np.random.rand(2, 2) + 1j * np.random.rand(2, 2)
+    random_unitary_gate, _ = np.linalg.qr(random_matrix)
+    inverse_gate = Gates.create_inverse_gate(random_unitary_gate)
+    assert np.allclose(random_unitary_gate @ inverse_gate, np.eye(2))
 
 
 def test_create_controlled_gate():
@@ -21,3 +22,11 @@ def test_non_unitary_gate():
     non_unitary_gate = np.array([[2, 0], [0, 0.5]])
     with pytest.raises(ValueError):
         Gates._validate_gate(non_unitary_gate)
+
+
+def test_create_controlled_gate_invalid_qubits():
+    # Define a scenario where the control and target qubits are out of range
+    with pytest.raises(IndexError):
+        Gates.create_controlled_gate(
+            Gates.X, control_qubit=4, target_qubit=5, num_qubits=3
+        )
