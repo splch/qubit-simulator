@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="qubit_simulator",
-    version="0.0.6",
+    name="qubit-simulator",
+    version="0.0.7",
     description="A simple qubit simulator",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
