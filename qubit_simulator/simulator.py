@@ -216,6 +216,39 @@ class QubitSimulator:
         """
         self.__init__(self.num_qubits)
 
+    def plot_wavefunction(self):
+        """
+        Plots the wavefunction's amplitude and phase using a phase circle plot.
+        """
+        from matplotlib import pyploy as plt
+
+        amplitude = np.abs(self.state_vector)
+        phase = np.angle(self.state_vector)
+        labels = [
+            format(i, f"0{self.num_qubits}b") for i in range(len(self.state_vector))
+        ]
+        fig, ax = plt.subplots()
+        ax.set_aspect("equal", "box")
+        for i, (amp, phi) in enumerate(zip(amplitude, phase)):
+            x = amp * np.cos(phi)
+            y = amp * np.sin(phi)
+            ax.scatter(x, y)
+            ax.annotate(
+                labels[i],
+                (x, y),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+            )
+        ax.set_xlim(-1.1, 1.1)
+        ax.set_ylim(-1.1, 1.1)
+        ax.axhline(0, color="black", linewidth=0.5)
+        ax.axvline(0, color="black", linewidth=0.5)
+        plt.title("Amplitude and Phase of Quantum States")
+        plt.xlabel("Real Component (Cosine of Phase * Amplitude)")
+        plt.ylabel("Imaginary Component (Sine of Phase * Amplitude)")
+        plt.show()
+
     def __str__(self) -> str:
         """
         Returns a string representation of the circuit.
