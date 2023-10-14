@@ -220,7 +220,7 @@ class QubitSimulator:
         """
         Plots the wavefunction's amplitude and phase using a phase circle plot.
         """
-        from matplotlib import pyploy as plt
+        from matplotlib import pyplot as plt
 
         amplitude = np.abs(self.state_vector)
         phase = np.angle(self.state_vector)

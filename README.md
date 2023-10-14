@@ -66,6 +66,16 @@ print(simulator)
 -----------------------------------
 ```
 
+### Wavefunction Plot
+
+Show the amplitude and phase of all quantum states:
+
+```python
+simulator.plot_wavefunction()
+```
+
+![Wavefunction Scatter Plot](https://github.com/splch/qubit-simulator/assets/25377399/de3242ef-9c14-44be-b49b-656e9727c618)
+
 ## Testing
 
 Tests are included in the package to verify its functionality and provide more advanced examples:
