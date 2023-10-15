@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-from sys import getsizeof
 from qubit_simulator import QubitSimulator, Gates
 
 # Initialization and Basic Configuration
