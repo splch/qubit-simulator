@@ -137,12 +137,11 @@ def test_measure():
     assert result == ["1"]
 
 
-def test_measure_multiple_shots():
-    shots = 100
+@pytest.mark.parametrize("shots", [5, 13])
+def test_measure_multiple_shots(shots):
     simulator = QubitSimulator(1)
     simulator.x(0)
     results = simulator.measure(shots=shots)
-    # Measure 100 1s
     assert results.count("1") == shots
 
 
