@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
 from sys import getsizeof
 from qubit_simulator import QubitSimulator, Gates
 
@@ -366,3 +367,14 @@ def test_getsize():
     simulator.h(0)
     simulator.cx(0, 1)
     assert simulator.__getsize__() > initial_size
+
+
+# Plotting
+
+
+def test_plot_wavefunction():
+    simulator = QubitSimulator(2)
+    simulator.h(0)
+    simulator.cx(0, 1)
+    simulator.plot_wavefunction()
+    plt.close("all")

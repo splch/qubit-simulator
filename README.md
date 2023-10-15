@@ -76,8 +76,6 @@ Show the amplitude and phase of all quantum states:
 simulator.plot_wavefunction()
 ```
 
-> Note: This method requires `matplotlib`
-
 ![Wavefunction Scatter Plot](https://github.com/splch/qubit-simulator/assets/25377399/de3242ef-9c14-44be-b49b-656e9727c618)
 
 ## Testing

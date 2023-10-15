@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import Counter
 from sys import getsizeof
 from typing import Optional, List, Tuple, Dict
@@ -233,8 +234,6 @@ class QubitSimulator:
         """
         Plots the wavefunction's amplitude and phase using a phase circle plot.
         """
-        from matplotlib import pyplot as plt
-
         amplitude = np.abs(self.state_vector)
         phase = np.angle(self.state_vector)
         labels = [
