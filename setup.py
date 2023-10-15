@@ -9,8 +9,7 @@ setup(
     author="Spencer Churchill",
     author_email="churchill@ionq.com",
     packages=find_packages(),
-    install_requires=["numpy"],
-    extras_require={"all": ["matplotlib"]},
+    install_requires=["numpy", "matplotlib"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",

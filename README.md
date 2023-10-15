@@ -45,10 +45,12 @@ simulator.u(2, 0.3, 0.4, 0.5)  # Generic gate
 Measure the state of the qubits:
 
 ```python
-simulator.run(shots=100)
+print(simulator.run(shots=100))
 ```
 
-> {'000': 51, '101': 41, '001': 6, '100': 2}
+```plaintext
+{'000': 46, '001': 4, '100': 4, '101': 46}
+```
 
 ### Circuit Representation
 
@@ -73,6 +75,8 @@ Show the amplitude and phase of all quantum states:
 ```python
 simulator.plot_wavefunction()
 ```
+
+> Note: This method requires `matplotlib`
 
 ![Wavefunction Scatter Plot](https://github.com/splch/qubit-simulator/assets/25377399/de3242ef-9c14-44be-b49b-656e9727c618)
 

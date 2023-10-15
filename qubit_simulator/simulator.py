@@ -182,7 +182,7 @@ class QubitSimulator:
     def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
         """
         Measures the state of the qubits.
-
+    
         :param shots: Number of measurements.
         :param basis: Optional basis transformation.
         :return: List of measurement results.
@@ -192,10 +192,21 @@ class QubitSimulator:
             raise ValueError("Number of shots must be non-negative.")
         state_vector = self.state_vector
         if basis is not None:
-            state_vector = basis @ self.state_vector
-        probabilities = np.abs(state_vector) ** 2
-        result = np.random.choice(2**self.num_qubits, p=probabilities, size=shots)
-        return [format(r, f"0{self.num_qubits}b") for r in result]
+            state_vector = basis @ state_vector
+        probabilities = np.abs(state_vector)**2
+        ideal_counts = np.round(probabilities * shots).astype(int)
+        unique_states = np.array([format(i, f"0{self.num_qubits}b") for i in range(len(ideal_counts))])
+        results = np.repeat(unique_states, ideal_counts)
+        total_counts = np.sum(ideal_counts)
+        diff = total_counts - shots
+        if diff > 0:
+            remove_indices = np.random.choice(len(results), size=diff, replace=False)
+            results = np.delete(results, remove_indices)
+        elif diff < 0:
+            add_indices = np.random.choice(len(ideal_counts), size=-diff, p=probabilities)
+            additional_results = unique_states[add_indices]
+            results = np.concatenate([results, additional_results])
+        return results.tolist()
 
     def run(
         self, shots: int = 100, basis: Optional[np.ndarray] = None

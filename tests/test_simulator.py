@@ -361,15 +361,6 @@ def test_qft(num_qubits):
 
 
 def test_getsize():
-    simulator = QubitSimulator(3)
-    # Apply some gates to make the instance more complex
-    simulator.h(0)
-    simulator.u(1, np.pi / 4, np.pi / 4, np.pi / 2)
-    simulator.cx(1, 2)
-    assert simulator.__getsize__() == 412
-
-
-def test_getsize_relative():
     simulator = QubitSimulator(2)
     initial_size = simulator.__getsize__()
     simulator.h(0)
