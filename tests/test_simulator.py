@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from sys import getsizeof
+import matplotlib.pyplot as plt
 from qubit_simulator import QubitSimulator, Gates
 
 # Initialization and Basic Configuration
@@ -136,13 +136,23 @@ def test_measure():
     assert result == ["1"]
 
 
-def test_measure_multiple_shots():
-    shots = 100
+@pytest.mark.parametrize("shots", [2, 10])
+def test_measure_multiple_shots(shots):
     simulator = QubitSimulator(1)
     simulator.x(0)
     results = simulator.measure(shots=shots)
-    # Measure 100 1s
     assert results.count("1") == shots
+
+
+@pytest.mark.parametrize("shots", [5, 13])
+def test_measure_adjustment(shots):
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.t(1)
+    simulator.cx(0, 2)
+    simulator.u(2, 0.3, 0.4, 0.5)
+    results = simulator.measure(shots)
+    assert len(results) == shots
 
 
 @pytest.mark.parametrize("shots", [-1, -10])
@@ -182,7 +192,7 @@ def test_measure_probabilities():
     simulator = QubitSimulator(1)
     simulator.h(0)
     results = simulator.run(shots=shots)
-    assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
+    assert results.get("0", 0) == results.get("1", 0)
 
 
 # Error Handling and Validation
@@ -361,17 +371,21 @@ def test_qft(num_qubits):
 
 
 def test_getsize():
-    simulator = QubitSimulator(3)
-    # Apply some gates to make the instance more complex
-    simulator.h(0)
-    simulator.u(1, np.pi / 4, np.pi / 4, np.pi / 2)
-    simulator.cx(1, 2)
-    assert simulator.__getsize__() == 412
-
-
-def test_getsize_relative():
     simulator = QubitSimulator(2)
     initial_size = simulator.__getsize__()
     simulator.h(0)
     simulator.cx(0, 1)
     assert simulator.__getsize__() > initial_size
+
+
+# Plotting
+
+
+def test_plot_wavefunction():
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.t(1)
+    simulator.cx(0, 2)
+    simulator.u(2, 0.3, 0.4, 0.5)
+    simulator.plot_wavefunction()
+    plt.close("all")

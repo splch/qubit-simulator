@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import Counter
 from sys import getsizeof
 from typing import Optional, List, Tuple, Dict
@@ -190,12 +191,25 @@ class QubitSimulator:
         """
         if shots < 0:
             raise ValueError("Number of shots must be non-negative.")
-        state_vector = self.state_vector
         if basis is not None:
+            Gates._validate_gate(basis)
             state_vector = basis @ self.state_vector
+        else:
+            state_vector = self.state_vector
         probabilities = np.abs(state_vector) ** 2
-        result = np.random.choice(2**self.num_qubits, p=probabilities, size=shots)
-        return [format(r, f"0{self.num_qubits}b") for r in result]
+        counts = np.round(probabilities * shots).astype(int)
+        unique_states = [format(i, f"0{self.num_qubits}b") for i in range(len(counts))]
+        results = [
+            state for state, count in zip(unique_states, counts) for _ in range(count)
+        ]
+        diff = sum(counts) - shots
+        if diff > 0:
+            idx_to_remove = np.random.choice(len(results))
+            results.pop(idx_to_remove)
+        elif diff < 0:
+            idx_to_add = np.random.choice(len(counts), p=probabilities)
+            results.append(format(idx_to_add, f"0{self.num_qubits}b"))
+        return results
 
     def run(
         self, shots: int = 100, basis: Optional[np.ndarray] = None
@@ -215,6 +229,37 @@ class QubitSimulator:
         Resets the simulator to its initial state.
         """
         self.__init__(self.num_qubits)
+
+    def plot_wavefunction(self):
+        """
+        Plots the wavefunction's amplitude and phase using a phase circle plot.
+        """
+        amplitude = np.abs(self.state_vector)
+        phase = np.angle(self.state_vector)
+        labels = [
+            format(i, f"0{self.num_qubits}b") for i in range(len(self.state_vector))
+        ]
+        fig, ax = plt.subplots()
+        ax.set_aspect("equal", "box")
+        for i, (amp, phi) in enumerate(zip(amplitude, phase)):
+            x = amp * np.cos(phi)
+            y = amp * np.sin(phi)
+            ax.scatter(x, y)
+            ax.annotate(
+                labels[i],
+                (x, y),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+            )
+        ax.set_xlim(-1.1, 1.1)
+        ax.set_ylim(-1.1, 1.1)
+        ax.axhline(0, color="black", linewidth=0.5)
+        ax.axvline(0, color="black", linewidth=0.5)
+        plt.title("Amplitude and Phase of Quantum States")
+        plt.xlabel("Real Component (Cosine of Phase * Amplitude)")
+        plt.ylabel("Imaginary Component (Sine of Phase * Amplitude)")
+        plt.show()
 
     def __str__(self) -> str:
         """
