@@ -137,12 +137,23 @@ def test_measure():
     assert result == ["1"]
 
 
-@pytest.mark.parametrize("shots", [5, 13])
+@pytest.mark.parametrize("shots", [2, 3])
 def test_measure_multiple_shots(shots):
     simulator = QubitSimulator(1)
     simulator.x(0)
     results = simulator.measure(shots=shots)
     assert results.count("1") == shots
+
+
+@pytest.mark.parametrize("shots", [5, 13])
+def test_measure_adjustment(shots):
+    simulator = QubitSimulator(3)
+    simulator.h(0)
+    simulator.t(1)
+    simulator.cx(0, 2)
+    simulator.u(2, 0.3, 0.4, 0.5)
+    results = simulator.measure(shots)
+    assert len(results) == shots
 
 
 @pytest.mark.parametrize("shots", [-1, -10])
@@ -182,7 +193,7 @@ def test_measure_probabilities():
     simulator = QubitSimulator(1)
     simulator.h(0)
     results = simulator.run(shots=shots)
-    assert abs(results.get("0", 0) - results.get("1", 0)) < shots / 4
+    assert results.get("0", 0) == results.get("1", 0)
 
 
 # Error Handling and Validation
@@ -372,8 +383,10 @@ def test_getsize():
 
 
 def test_plot_wavefunction():
-    simulator = QubitSimulator(2)
+    simulator = QubitSimulator(3)
     simulator.h(0)
-    simulator.cx(0, 1)
+    simulator.t(1)
+    simulator.cx(0, 2)
+    simulator.u(2, 0.3, 0.4, 0.5)
     simulator.plot_wavefunction()
     plt.close("all")
