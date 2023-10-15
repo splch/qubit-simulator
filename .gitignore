@@ -1,3 +1,7 @@
+# Development
+Untitled.*
+untitled.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -76,7 +80,9 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
+.jupyter/
+.virtual_documents/
 
 # IPython
 profile_default/
