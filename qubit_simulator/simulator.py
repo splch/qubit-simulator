@@ -4,173 +4,98 @@ from .gates import Gates
 
 class QubitSimulator:
     """
-    A simple statevector simulator for a given number of qubits.
-    State is stored in a 1D NumPy array of length 2^n.
+    Simple statevector simulator using tensor operations to apply
+    any k-qubit gate by appropriately reshaping both the gate and state.
     """
 
     def __init__(self, num_qubits):
-        self.num_qubits = num_qubits
-        # Start in |0...0> state
+        self.n = num_qubits
+        # Statevector of length 2^n, start in |0...0>
         self.state = np.zeros(2**num_qubits, dtype=complex)
         self.state[0] = 1.0
 
-    def _apply_single_qubit_gate(self, gate, qubit):
+    def _apply_gate(self, U, qubits):
         """
-        Apply a 2x2 single-qubit gate to the specified qubit.
+        1) Reshape U into a tensor of shape (2,...,2, 2,...,2) with k inputs & k outputs
+        2) Reshape self.state into (2,2,...,2)
+        3) Move the 'qubits' axes to the front
+        4) Use tensordot to contract
+        5) Move the axes back and flatten
         """
-        # We'll iterate in blocks of size 2^(qubit).
-        # Within each block, we do a 2-element transform.
-        step = 2**qubit
-        for start in range(0, 2**self.num_qubits, 2 * step):
-            for k in range(step):
-                idx0 = start + k
-                idx1 = start + k + step
-                # Apply the 2x2 gate
-                new0 = gate[0, 0] * self.state[idx0] + gate[0, 1] * self.state[idx1]
-                new1 = gate[1, 0] * self.state[idx0] + gate[1, 1] * self.state[idx1]
-                self.state[idx0] = new0
-                self.state[idx1] = new1
+        k = len(qubits)  # number of qubits this gate acts on
+        shapeU = (2,) * k + (2,) * k  # e.g. for 2-qubit gate => (2,2, 2,2)
+        U_reshaped = U.reshape(shapeU)  # from (2^k,2^k) to (2,...,2,2,...,2)
 
-    def _apply_two_qubit_gate(self, gate4x4, qubit0, qubit1):
-        """
-        Apply a 4x4 two-qubit gate where
-        - qubit0 is the MOST significant bit
-        - qubit1 is the LEAST significant bit
-        in the 2-qubit subspace index.
-        """
-        new_state = np.zeros_like(self.state, dtype=complex)
-        size = 2 ** self.num_qubits
+        st = self.state.reshape([2] * self.n)
+        # Move the targeted qubits' axes to the front, so we contract over them
+        st = np.moveaxis(st, qubits, range(k))
 
-        for i in range(size):
-            # Extract the bits for each qubit
-            b0 = (i >> qubit0) & 1  # MSB
-            b1 = (i >> qubit1) & 1  # LSB
+        # tensordot over the last k dims of U with the first k dims of st
+        #   - The last k axes of U_reshaped are the "input" axes
+        #   - The first k axes of st are the qubits we apply the gate to
+        st_out = np.tensordot(U_reshaped, st, axes=(range(k, 2 * k), range(k)))
 
-            # sub_i in [0..3], MSB = b0, LSB = b1
-            sub_i = 2 * b0 + b1
+        # st_out now has k "output" axes in front, plus the other (n-k) axes
+        # Move the front k axes back to their original positions
+        st_out = np.moveaxis(st_out, range(k), qubits)
 
-            # Loop over all possible final subspace states
-            for sub_f in range(4):
-                # Decode final bits
-                b0_f = (sub_f >> 1) & 1  # final MSB
-                b1_f = (sub_f >> 0) & 1  # final LSB
+        # Flatten back to 1D
+        self.state = st_out.ravel()
 
-                # Build final index j by replacing bits qubit0, qubit1 in i
-                j = i
-                # Clear the old bits
-                j &= ~(1 << qubit0)
-                j &= ~(1 << qubit1)
-                # Set the new bits
-                j |= (b0_f << qubit0)
-                j |= (b1_f << qubit1)
+    # -- Single-qubit gates --
+    def x(self, q):
+        self._apply_gate(Gates.X, [q])
 
-                # Accumulate amplitude
-                new_state[j] += gate4x4[sub_f, sub_i] * self.state[i]
+    def y(self, q):
+        self._apply_gate(Gates.Y, [q])
 
-        self.state = new_state
+    def z(self, q):
+        self._apply_gate(Gates.Z, [q])
 
-    def _apply_three_qubit_gate(self, gate8x8, qubits):
-        """
-        Apply an 8x8 three-qubit gate where:
-        qubits[0] = MSB,
-        qubits[1] = middle,
-        qubits[2] = LSB
-        """
-        q0, q1, q2 = qubits
-        new_state = np.zeros_like(self.state, dtype=complex)
-        size = 2 ** self.num_qubits
+    def h(self, q):
+        self._apply_gate(Gates.H, [q])
 
-        for i in range(size):
-            b0 = (i >> q0) & 1  # MSB
-            b1 = (i >> q1) & 1  # middle
-            b2 = (i >> q2) & 1  # LSB
+    def s(self, q):
+        self._apply_gate(Gates.S, [q])
 
-            # sub_i in [0..7]
-            sub_i = 4 * b0 + 2 * b1 + b2
+    def t(self, q):
+        self._apply_gate(Gates.T, [q])
 
-            # Loop over all possible final subspace states
-            for sub_f in range(8):
-                b0_f = (sub_f >> 2) & 1
-                b1_f = (sub_f >> 1) & 1
-                b2_f = (sub_f >> 0) & 1
+    def u(self, theta, phi, lam, q):
+        self._apply_gate(Gates.U(theta, phi, lam), [q])
 
-                j = i
-                # Clear old bits
-                j &= ~(1 << q0)
-                j &= ~(1 << q1)
-                j &= ~(1 << q2)
-                # Set new bits
-                j |= (b0_f << q0)
-                j |= (b1_f << q1)
-                j |= (b2_f << q2)
-
-                # Accumulate
-                new_state[j] += gate8x8[sub_f, sub_i] * self.state[i]
-
-        self.state = new_state
-
-    # ------------------------------------------------------------------------
-    # Public methods for applying gates by name
-    # ------------------------------------------------------------------------
-    def x(self, qubit):
-        self._apply_single_qubit_gate(Gates.X, qubit)
-
-    def y(self, qubit):
-        self._apply_single_qubit_gate(Gates.Y, qubit)
-
-    def z(self, qubit):
-        self._apply_single_qubit_gate(Gates.Z, qubit)
-
-    def h(self, qubit):
-        self._apply_single_qubit_gate(Gates.H, qubit)
-
-    def s(self, qubit):
-        self._apply_single_qubit_gate(Gates.S, qubit)
-
-    def t(self, qubit):
-        self._apply_single_qubit_gate(Gates.T, qubit)
-
-    def u(self, theta, phi, lam, qubit):
-        mat = Gates.U(theta, phi, lam)
-        self._apply_single_qubit_gate(mat, qubit)
-
+    # -- Two-qubit gates --
     def cx(self, control, target):
-        mat = Gates.controlled_gate(Gates.X)
-        self._apply_two_qubit_gate(mat, control, target)
+        self._apply_gate(Gates.controlled_gate(Gates.X), [control, target])
 
     def cu(self, theta, phi, lam, control, target):
-        mat = Gates.controlled_gate(Gates.U(theta, phi, lam))
-        self._apply_two_qubit_gate(mat, control, target)
+        self._apply_gate(
+            Gates.controlled_gate(Gates.U(theta, phi, lam)), [control, target]
+        )
 
-    def swap(self, qubit1, qubit2):
-        mat = Gates.SWAP_matrix()
-        self._apply_two_qubit_gate(mat, qubit1, qubit2)
+    def swap(self, q1, q2):
+        self._apply_gate(Gates.SWAP_matrix(), [q1, q2])
 
-    def iswap(self, qubit1, qubit2):
-        mat = Gates.iSWAP_matrix()
-        self._apply_two_qubit_gate(mat, qubit1, qubit2)
+    def iswap(self, q1, q2):
+        self._apply_gate(Gates.iSWAP_matrix(), [q1, q2])
 
+    # -- Three-qubit gates --
     def toffoli(self, c1, c2, t):
-        mat = Gates.Toffoli_matrix()
-        self._apply_three_qubit_gate(mat, [c1, c2, t])
+        self._apply_gate(Gates.Toffoli_matrix(), [c1, c2, t])
 
     def fredkin(self, c, t1, t2):
-        mat = Gates.Fredkin_matrix()
-        self._apply_three_qubit_gate(mat, [c, t1, t2])
+        self._apply_gate(Gates.Fredkin_matrix(), [c, t1, t2])
 
-    # ------------------------------------------------------------------------
-    # Simulation & measurement
-    # ------------------------------------------------------------------------
+    # -- Simulation & measurement --
     def run(self, shots=1024):
         """
-        Measure all qubits in the computational basis, repeated 'shots' times.
-        Returns a dictionary of {'bitstring': count}.
+        Measure all qubits in the computational basis 'shots' times.
+        Returns a dict of {'bitstring': count}.
         """
         probs = np.abs(self.state) ** 2
-        outcomes = np.random.choice(2**self.num_qubits, size=shots, p=probs)
+        outcomes = np.random.choice(2**self.n, p=probs, size=shots)
         counts = {}
         for out in outcomes:
-            # Convert integer to bitstring (e.g., for 2 qubits -> '00', '01', '10', '11')
-            bitstring = format(out, "0{}b".format(self.num_qubits))
+            bitstring = format(out, "0{}b".format(self.n))
             counts[bitstring] = counts.get(bitstring, 0) + 1
         return counts
