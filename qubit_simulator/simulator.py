@@ -1,296 +1,176 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from collections import Counter
-from sys import getsizeof
-from typing import Optional, List, Tuple, Dict
 from .gates import Gates
 
 
 class QubitSimulator:
     """
-    A class that represents a qubit simulator.
+    A simple statevector simulator for a given number of qubits.
+    State is stored in a 1D NumPy array of length 2^n.
     """
 
-    def __init__(self, num_qubits: int):
-        """
-        Initialize the simulator with given number of qubits.
-
-        :param num_qubits: Number of qubits.
-        :raises ValueError: If the number of qubits is negative.
-        """
-        if num_qubits < 0:
-            raise ValueError("Number of qubits must be non-negative.")
-
+    def __init__(self, num_qubits):
         self.num_qubits = num_qubits
-        self.state_vector = np.zeros(2**num_qubits, dtype=complex)
-        self.state_vector[0] = 1
-        self.circuit: List[Tuple[str, int, Optional[int]]] = []
+        # Start in |0...0> state
+        self.state = np.zeros(2**num_qubits, dtype=complex)
+        self.state[0] = 1.0
 
-    def _validate_qubit_index(
-        self, target_qubit: int, control_qubit: Optional[int] = None
-    ):
+    def _apply_single_qubit_gate(self, gate, qubit):
         """
-        Validates the qubit indices.
+        Apply a 2x2 single-qubit gate to the specified qubit.
+        """
+        # We'll iterate in blocks of size 2^(qubit).
+        # Within each block, we do a 2-element transform.
+        step = 2**qubit
+        for start in range(0, 2**self.num_qubits, 2 * step):
+            for k in range(step):
+                idx0 = start + k
+                idx1 = start + k + step
+                # Apply the 2x2 gate
+                new0 = gate[0, 0] * self.state[idx0] + gate[0, 1] * self.state[idx1]
+                new1 = gate[1, 0] * self.state[idx0] + gate[1, 1] * self.state[idx1]
+                self.state[idx0] = new0
+                self.state[idx1] = new1
 
-        :param target_qubit: Index of the target qubit to validate.
-        :param control_qubit: Index of the control qubit to validate.
-        :raises IndexError: If the qubit index is out of range.
+    def _apply_two_qubit_gate(self, gate4x4, qubit0, qubit1):
         """
-        if target_qubit < 0 or target_qubit >= self.num_qubits:
-            raise IndexError(f"Target qubit index {target_qubit} out of range.")
-        if control_qubit is not None and (
-            control_qubit < 0 or control_qubit >= self.num_qubits
-        ):
-            raise IndexError(f"Control qubit index {control_qubit} out of range.")
+        Apply a 4x4 two-qubit gate where
+        - qubit0 is the MOST significant bit
+        - qubit1 is the LEAST significant bit
+        in the 2-qubit subspace index.
+        """
+        new_state = np.zeros_like(self.state, dtype=complex)
+        size = 2 ** self.num_qubits
 
-    def _get_gate_name(
-        self, theta: float, phi: float, lambda_: float, inverse: bool
-    ) -> str:
-        """
-        Constructs the name for a U gate or its inverse.
+        for i in range(size):
+            # Extract the bits for each qubit
+            b0 = (i >> qubit0) & 1  # MSB
+            b1 = (i >> qubit1) & 1  # LSB
 
-        :param theta: Angle theta.
-        :param phi: Angle phi.
-        :param lambda_: Angle lambda.
-        :param inverse: Whether the gate is an inverse.
-        :return: String representing the gate name.
-        """
-        return f"U{'†' if inverse else ''}({theta:.2f}, {phi:.2f}, {lambda_:.2f})"
+            # sub_i in [0..3], MSB = b0, LSB = b1
+            sub_i = 2 * b0 + b1
 
-    def _apply_gate(
-        self,
-        gate_name: str,
-        gate: np.ndarray,
-        target_qubit: int,
-        control_qubit: Optional[int] = None,
-    ):
-        """
-        Applies the given gate to the target qubit.
+            # Loop over all possible final subspace states
+            for sub_f in range(4):
+                # Decode final bits
+                b0_f = (sub_f >> 1) & 1  # final MSB
+                b1_f = (sub_f >> 0) & 1  # final LSB
 
-        :param gate_name: Name of the gate.
-        :param gate: Matrix representing the gate.
-        :param target_qubit: Index of the target qubit.
-        :param control_qubit: Index of the control qubit (if controlled gate).
-        """
-        # Validate the target and control qubit indices
-        self._validate_qubit_index(target_qubit, control_qubit)
-        # Validate the gate
-        Gates._validate_gate(gate)
-        if control_qubit is not None:
-            operator = Gates.create_controlled_gate(
-                gate, control_qubit, target_qubit, self.num_qubits
-            )
-        else:
-            operator = np.eye(1)
-            for qubit in range(self.num_qubits):
-                operator = np.kron(
-                    operator,
-                    gate if qubit == target_qubit else np.eye(2),
-                )
-        self.state_vector = operator @ self.state_vector
-        self.circuit.append((gate_name, target_qubit, control_qubit))
+                # Build final index j by replacing bits qubit0, qubit1 in i
+                j = i
+                # Clear the old bits
+                j &= ~(1 << qubit0)
+                j &= ~(1 << qubit1)
+                # Set the new bits
+                j |= (b0_f << qubit0)
+                j |= (b1_f << qubit1)
 
-    def h(self, target_qubit: int):
-        """
-        Applies Hadamard gate to the target qubit.
+                # Accumulate amplitude
+                new_state[j] += gate4x4[sub_f, sub_i] * self.state[i]
 
-        :param target_qubit: Index of the target qubit.
-        """
-        self._apply_gate("H", Gates.H, target_qubit)
+        self.state = new_state
 
-    def t(self, target_qubit: int):
+    def _apply_three_qubit_gate(self, gate8x8, qubits):
         """
-        Applies π/8 gate to the target qubit.
+        Apply an 8x8 three-qubit gate where:
+        qubits[0] = MSB,
+        qubits[1] = middle,
+        qubits[2] = LSB
+        """
+        q0, q1, q2 = qubits
+        new_state = np.zeros_like(self.state, dtype=complex)
+        size = 2 ** self.num_qubits
 
-        :param target_qubit: Index of the target qubit.
-        """
-        self._apply_gate("T", Gates.T, target_qubit)
+        for i in range(size):
+            b0 = (i >> q0) & 1  # MSB
+            b1 = (i >> q1) & 1  # middle
+            b2 = (i >> q2) & 1  # LSB
 
-    def x(self, target_qubit: int):
-        """
-        Applies Not gate to the target qubit.
+            # sub_i in [0..7]
+            sub_i = 4 * b0 + 2 * b1 + b2
 
-        :param target_qubit: Index of the target qubit.
-        """
-        self._apply_gate("X", Gates.X, target_qubit)
+            # Loop over all possible final subspace states
+            for sub_f in range(8):
+                b0_f = (sub_f >> 2) & 1
+                b1_f = (sub_f >> 1) & 1
+                b2_f = (sub_f >> 0) & 1
 
-    def cx(self, control_qubit: int, target_qubit: int):
-        """
-        Applies Controlled-Not gate to the target qubit.
+                j = i
+                # Clear old bits
+                j &= ~(1 << q0)
+                j &= ~(1 << q1)
+                j &= ~(1 << q2)
+                # Set new bits
+                j |= (b0_f << q0)
+                j |= (b1_f << q1)
+                j |= (b2_f << q2)
 
-        :param control_qubit: Index of the control qubit.
-        :param target_qubit: Index of the target qubit.
-        """
-        self._apply_gate("X", Gates.X, target_qubit, control_qubit)
+                # Accumulate
+                new_state[j] += gate8x8[sub_f, sub_i] * self.state[i]
 
-    def u(
-        self,
-        target_qubit: int,
-        theta: float,
-        phi: float,
-        lambda_: float,
-        inverse: Optional[bool] = False,
-    ):
-        """
-        Applies Generic gate to the target qubit.
+        self.state = new_state
 
-        :param target_qubit: Index of the target qubit.
-        :param theta: Angle theta.
-        :param phi: Angle phi.
-        :param lambda_: Angle lambda.
-        :param inverse: Whether to apply the inverse of the gate.
-        """
-        gate = (
-            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
-            if inverse
-            else Gates.U(theta, phi, lambda_)
-        )
-        self._apply_gate(
-            self._get_gate_name(theta, phi, lambda_, inverse), gate, target_qubit
-        )
+    # ------------------------------------------------------------------------
+    # Public methods for applying gates by name
+    # ------------------------------------------------------------------------
+    def x(self, qubit):
+        self._apply_single_qubit_gate(Gates.X, qubit)
 
-    def cu(
-        self,
-        control_qubit: int,
-        target_qubit: int,
-        theta: float,
-        phi: float,
-        lambda_: float,
-        inverse: Optional[bool] = False,
-    ):
-        """
-        Applies Controlled-Generic gate to the target qubit.
+    def y(self, qubit):
+        self._apply_single_qubit_gate(Gates.Y, qubit)
 
-        :param control_qubit: Index of the control qubit.
-        :param target_qubit: Index of the target qubit.
-        :param theta: Angle theta.
-        :param phi: Angle phi.
-        :param lambda_: Angle lambda.
-        :param inverse: Whether to apply the inverse of the gate.
-        """
-        gate = (
-            Gates.create_inverse_gate(Gates.U(theta, phi, lambda_))
-            if inverse
-            else Gates.U(theta, phi, lambda_)
-        )
-        self._apply_gate(
-            self._get_gate_name(theta, phi, lambda_, inverse),
-            gate,
-            target_qubit,
-            control_qubit,
-        )
+    def z(self, qubit):
+        self._apply_single_qubit_gate(Gates.Z, qubit)
 
-    def measure(self, shots: int = 1, basis: Optional[np.ndarray] = None) -> List[str]:
-        """
-        Measures the state of the qubits.
+    def h(self, qubit):
+        self._apply_single_qubit_gate(Gates.H, qubit)
 
-        :param shots: Number of measurements.
-        :param basis: Optional basis transformation.
-        :return: List of measurement results.
-        :raises ValueError: If the number of shots is negative.
-        """
-        if shots < 0:
-            raise ValueError("Number of shots must be non-negative.")
-        if basis is not None:
-            Gates._validate_gate(basis)
-            state_vector = basis @ self.state_vector
-        else:
-            state_vector = self.state_vector
-        probabilities = np.abs(state_vector) ** 2
-        counts = np.round(probabilities * shots).astype(int)
-        unique_states = [format(i, f"0{self.num_qubits}b") for i in range(len(counts))]
-        results = [
-            state for state, count in zip(unique_states, counts) for _ in range(count)
-        ]
-        diff = sum(counts) - shots
-        if diff > 0:
-            idx_to_remove = np.random.choice(len(results))
-            results.pop(idx_to_remove)
-        elif diff < 0:
-            idx_to_add = np.random.choice(len(counts), p=probabilities)
-            results.append(format(idx_to_add, f"0{self.num_qubits}b"))
-        return results
+    def s(self, qubit):
+        self._apply_single_qubit_gate(Gates.S, qubit)
 
-    def run(
-        self, shots: int = 100, basis: Optional[np.ndarray] = None
-    ) -> Dict[str, int]:
-        """
-        Runs the simulation and returns measurement results.
+    def t(self, qubit):
+        self._apply_single_qubit_gate(Gates.T, qubit)
 
-        :param shots: Number of measurements.
-        :param basis: Optional basis transformation.
-        :return: Dictionary of measurement results.
-        """
-        results = self.measure(shots, basis)
-        return dict(Counter(results))
+    def u(self, theta, phi, lam, qubit):
+        mat = Gates.U(theta, phi, lam)
+        self._apply_single_qubit_gate(mat, qubit)
 
-    def reset(self):
-        """
-        Resets the simulator to its initial state.
-        """
-        self.__init__(self.num_qubits)
+    def cx(self, control, target):
+        mat = Gates.controlled_gate(Gates.X)
+        self._apply_two_qubit_gate(mat, control, target)
 
-    def plot_wavefunction(self):
-        """
-        Plots the wavefunction's amplitude and phase using a phase circle plot.
-        """
-        amplitude = np.abs(self.state_vector)
-        phase = np.angle(self.state_vector)
-        labels = [
-            format(i, f"0{self.num_qubits}b") for i in range(len(self.state_vector))
-        ]
-        fig, ax = plt.subplots()
-        ax.set_aspect("equal", "box")
-        for i, (amp, phi) in enumerate(zip(amplitude, phase)):
-            x = amp * np.cos(phi)
-            y = amp * np.sin(phi)
-            ax.scatter(x, y)
-            ax.annotate(
-                labels[i],
-                (x, y),
-                textcoords="offset points",
-                xytext=(0, 10),
-                ha="center",
-            )
-        ax.set_xlim(-1.1, 1.1)
-        ax.set_ylim(-1.1, 1.1)
-        ax.axhline(0, color="black", linewidth=0.5)
-        ax.axvline(0, color="black", linewidth=0.5)
-        plt.title("Amplitude and Phase of Quantum States")
-        plt.xlabel("Real Component (Cosine of Phase * Amplitude)")
-        plt.ylabel("Imaginary Component (Sine of Phase * Amplitude)")
-        plt.show()
+    def cu(self, theta, phi, lam, control, target):
+        mat = Gates.controlled_gate(Gates.U(theta, phi, lam))
+        self._apply_two_qubit_gate(mat, control, target)
 
-    def __str__(self) -> str:
-        """
-        Returns a string representation of the circuit.
+    def swap(self, qubit1, qubit2):
+        mat = Gates.SWAP_matrix()
+        self._apply_two_qubit_gate(mat, qubit1, qubit2)
 
-        :return: String representing the circuit.
-        """
-        separator_length = sum(
-            (len(gate_name) + 3 for gate_name, _, _ in self.circuit), 1
-        )
-        lines = ["-" * separator_length]
-        qubit_lines = [["|"] for _ in range(self.num_qubits)]
-        for gate_name, target_qubit, control_qubit in self.circuit:
-            gate_name_length = len(gate_name)
-            gate_name_str = f" {gate_name} ".center(gate_name_length + 2, " ")
-            for i in range(self.num_qubits):
-                if control_qubit == i:
-                    qubit_lines[i].append(" @ ".center(gate_name_length + 2, " "))
-                elif target_qubit == i:
-                    qubit_lines[i].append(gate_name_str)
-                else:
-                    qubit_lines[i].append(" " * (gate_name_length + 2))
-                qubit_lines[i].append("|")
-        lines += ["".join(line) for line in qubit_lines]
-        lines += ["-" * separator_length]
-        return "\n".join(lines)
+    def iswap(self, qubit1, qubit2):
+        mat = Gates.iSWAP_matrix()
+        self._apply_two_qubit_gate(mat, qubit1, qubit2)
 
-    def __getsize__(self) -> int:
-        """
-        Returns the total memory size of the instance.
+    def toffoli(self, c1, c2, t):
+        mat = Gates.Toffoli_matrix()
+        self._apply_three_qubit_gate(mat, [c1, c2, t])
 
-        :return: Total memory size in bytes.
+    def fredkin(self, c, t1, t2):
+        mat = Gates.Fredkin_matrix()
+        self._apply_three_qubit_gate(mat, [c, t1, t2])
+
+    # ------------------------------------------------------------------------
+    # Simulation & measurement
+    # ------------------------------------------------------------------------
+    def run(self, shots=1024):
         """
-        return getsizeof(self) + sum(map(getsizeof, self.__dict__.values()))
+        Measure all qubits in the computational basis, repeated 'shots' times.
+        Returns a dictionary of {'bitstring': count}.
+        """
+        probs = np.abs(self.state) ** 2
+        outcomes = np.random.choice(2**self.num_qubits, size=shots, p=probs)
+        counts = {}
+        for out in outcomes:
+            # Convert integer to bitstring (e.g., for 2 qubits -> '00', '01', '10', '11')
+            bitstring = format(out, "0{}b".format(self.num_qubits))
+            counts[bitstring] = counts.get(bitstring, 0) + 1
+        return counts

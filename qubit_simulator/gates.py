@@ -1,98 +1,110 @@
 import numpy as np
-from typing import Union
 
 
 class Gates:
-    """
-    A class that represents the quantum gates.
-    """
+    """Collection of common quantum gate matrices and helper methods."""
 
-    # Hadamard (H) gate
-    H: np.ndarray = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-    # π/8 (T) gate
-    T: np.ndarray = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
-    # Pauli-X (NOT) gate
-    X: np.ndarray = np.array([[0, 1], [1, 0]])
+    # --- Single-qubit gates (2x2) ---
+    X = np.array([[0, 1], [1, 0]], dtype=complex)
+
+    Y = np.array([[0, -1j], [1j, 0]], dtype=complex)
+
+    Z = np.array([[1, 0], [0, -1]], dtype=complex)
+
+    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]], dtype=complex)
+
+    S = np.array([[1, 0], [0, 1j]], dtype=complex)  # Phase = pi/2
+
+    T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]], dtype=complex)  # Phase = pi/4
 
     @staticmethod
-    def U(theta: float, phi: float, lambda_: float) -> np.ndarray:
+    def U(theta, phi, lam):
         """
-        Generic (U) gate.
-
-        :param theta: Angle theta.
-        :param phi: Angle phi.
-        :param lambda_: Angle lambda.
-        :return: Unitary matrix representing the U gate.
+        General single-qubit U gate parametrized by
+        U(theta, phi, lambda):
+            U|0> = cos(theta/2)|0> + e^{i*lambda} sin(theta/2)|1>
+            U|1> = e^{i*phi}(-sin(theta/2))|0> + e^{i(phi+lambda)}cos(theta/2)|1>
         """
         return np.array(
             [
-                [np.cos(theta), -np.exp(1j * lambda_) * np.sin(theta)],
+                [np.cos(theta / 2), -np.exp(1j * lam) * np.sin(theta / 2)],
                 [
-                    np.exp(1j * phi) * np.sin(theta),
-                    np.exp(1j * (phi + lambda_)) * np.cos(theta),
+                    np.exp(1j * phi) * np.sin(theta / 2),
+                    np.exp(1j * (phi + lam)) * np.cos(theta / 2),
                 ],
-            ]
+            ],
+            dtype=complex,
+        )
+
+    # --- Two-qubit gates (4x4) ---
+    @staticmethod
+    def SWAP_matrix():
+        """
+        4x4 SWAP gate: swaps the states of two qubits.
+        """
+        return np.array(
+            [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=complex
         )
 
     @staticmethod
-    def create_controlled_gate(
-        gate: np.ndarray, control_qubit: int, target_qubit: int, num_qubits: int
-    ) -> np.ndarray:
+    def iSWAP_matrix():
         """
-        Creates a controlled gate.
+        4x4 iSWAP gate: swaps the states of two qubits and
+        adds a phase of i to the |01> -> |10> and |10> -> |01> transitions.
+        """
+        return np.array(
+            [[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]], dtype=complex
+        )
 
-        :param gate: Matrix representing the gate.
-        :param control_qubit: Index of the control qubit.
-        :param target_qubit: Index of the target qubit.
-        :param num_qubits: Total number of qubits.
-        :return: Matrix representing the controlled gate.
+    # --- Three-qubit gates (8x8) ---
+    @staticmethod
+    def Toffoli_matrix():
         """
-        controlled_gate = np.eye(2**num_qubits, dtype=complex)
-        for basis in range(2**num_qubits):
-            basis_binary = format(basis, f"0{num_qubits}b")
-            if basis_binary[control_qubit] == "1":
-                target_state = int(
-                    basis_binary[:target_qubit]
-                    + str(1 - int(basis_binary[target_qubit]))
-                    + basis_binary[target_qubit + 1 :],
-                    2,
-                )
-                controlled_gate[basis, basis] = gate[
-                    int(basis_binary[target_qubit]), int(basis_binary[target_qubit])
-                ]
-                controlled_gate[basis, target_state] = gate[
-                    int(basis_binary[target_qubit]), 1 - int(basis_binary[target_qubit])
-                ]
-                controlled_gate[target_state, basis] = gate[
-                    1 - int(basis_binary[target_qubit]), int(basis_binary[target_qubit])
-                ]
-                controlled_gate[target_state, target_state] = gate[
-                    1 - int(basis_binary[target_qubit]),
-                    1 - int(basis_binary[target_qubit]),
-                ]
-        return controlled_gate
+        8x8 Toffoli (CCNOT) gate:
+        flips the 3rd qubit (target) if first two qubits (controls) are |1>.
+        Ordering: qubits = (control1, control2, target).
+        Basis: |000>, |001>, |010>, |011>, |100>, |101>, |110>, |111>.
+        """
+        mat = np.eye(8, dtype=complex)
+        # The only flip is between |110> (6) and |111> (7).
+        mat[6, 6] = 0
+        mat[7, 7] = 0
+        mat[6, 7] = 1
+        mat[7, 6] = 1
+        return mat
 
     @staticmethod
-    def create_inverse_gate(gate: np.ndarray) -> np.ndarray:
+    def Fredkin_matrix():
         """
-        Creates an inverse gate.
-
-        :param gate: Matrix representing the gate.
-        :return: Matrix representing the inverse gate.
+        8x8 Fredkin (CSWAP) gate:
+        swaps the last two qubits if the first qubit is |1>.
+        Ordering: (control, target1, target2).
         """
-        return np.conjugate(gate.T)
+        mat = np.eye(8, dtype=complex)
+        # Indices in binary:
+        # |101> (5) <-> |110> (6) get swapped if control=1 => states |101> <-> |110>.
+        mat[5, 5], mat[6, 6] = 0, 0
+        mat[5, 6], mat[6, 5] = 1, 1
+        return mat
 
     @staticmethod
-    def _validate_gate(gate: np.ndarray):
+    def inverse_gate(U):
         """
-        Validates the gate.
+        Returns the inverse (adjoint) of gate U.
+        For a unitary U, the inverse is U^\dagger (the conjugate transpose).
+        """
+        return U.conjugate().T
 
-        :param gate: Matrix representing the gate.
-        :raises ValueError: If the gate is invalid.
+    @staticmethod
+    def controlled_gate(U):
         """
-        if not np.allclose(
-            gate @ Gates.create_inverse_gate(gate), np.eye(gate.shape[0])
-        ):
-            raise ValueError(
-                "The gate must be unitary. Its conjugate transpose must be equal to its inverse."
-            )
+        Convert a single-qubit gate U (2x2) into its controlled 2-qubit version (4x4).
+        Top-left block = I (when control is 0), bottom-right block = U (when control is 1).
+        """
+        # We assume U is 2x2.
+        controlled = np.zeros((4, 4), dtype=complex)
+        # The "control = 0" subspace gets Identity
+        controlled[0:2, 0:2] = np.eye(2, dtype=complex)
+        # The "control = 1" subspace gets U
+        controlled[2:4, 2:4] = U
+        return controlled
