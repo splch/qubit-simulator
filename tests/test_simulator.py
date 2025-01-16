@@ -235,4 +235,4 @@ def test_reset():
 
 def test_sizeof():
     sim = QubitSimulator(num_qubits=2)
-    assert sim.__sizeof__() == 2**2 * 16 + 8, "Size of simulator is not 2^2 * 16 + 8 bytes."
+    assert sim.__sizeof__() == 2**2 * 16 + 24, "Size of simulator is not 2^2 * 16 + 24 bytes."

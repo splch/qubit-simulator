@@ -7,36 +7,43 @@ from .gates import Gates
 
 class QubitSimulator:
     """
-    Simple statevector simulator using tensor operations to apply
-    any k-qubit gate by appropriately reshaping both the gate and state.
+    Statevector simulator using tensor operations
+    to apply any k-qubit gate by appropriately reshaping both
+    the gate and state.
     """
 
     def __init__(self, num_qubits: int):
         self.n = num_qubits
-        # Statevector of length 2^n, start in |0...0>
+        # Initialize statevector of length 2^n to |0...0>
         self.state = np.zeros(2**num_qubits, dtype=complex)
         self.state[0] = 1.0
         self._circuit = []
 
     def __sizeof__(self):
-        return self.state.nbytes + sum(op.__sizeof__() for op in self._circuit) + 8
+        return self.state.nbytes + sum(op.__sizeof__() for op in self._circuit) + 8 * 3
 
     def reset(self):
+        """Reset the simulator to the all-|0> state."""
         self.state = np.zeros(2**self.n, dtype=complex)
         self.state[0] = 1.0
+        self._circuit.clear()
 
-    def _apply_gate(self, U: np.ndarray, qubits: list):
+    def _apply_gate(self, U: np.ndarray, qubits: list[int]):
+        """
+        Apply the gate U on the specified qubits using tensor operations.
+        """
         k = len(qubits)  # number of qubits this gate acts on
         shapeU = (2,) * k + (2,) * k  # e.g. for 2-qubit gate => (2,2, 2,2)
         U_reshaped = U.reshape(shapeU)  # from (2^k,2^k) to (2,...,2,2,...,2)
+        # Reshape state from (2^n,) -> (2, 2, ..., 2)
         st = self.state.reshape([2] * self.n)
         # Move the targeted qubits' axes to the front, so we contract over them
         st = np.moveaxis(st, qubits, range(k))
-        # tensordot over the last k dims of U with the first k dims of st
+        # Tensordot over the last k dims of U with the first k dims of st
         #   - The last k axes of U_reshaped are the "input" axes
         #   - The first k axes of st are the qubits we apply the gate to
         st_out = np.tensordot(U_reshaped, st, axes=(range(k, 2 * k), range(k)))
-        # st_out now has k "output" axes in front, plus the other (n-k) axes
+        # st_out has k "output" axes in front, plus the other (n-k) axes
         # Move the front k axes back to their original positions
         st_out = np.moveaxis(st_out, range(k), qubits)
         # Flatten back to 1D
@@ -113,33 +120,47 @@ class QubitSimulator:
         return {f"{i:0{self.n}b}": int(c) for i, c in enumerate(base_counts) if c}
 
     def plot_state(self):
-        mag, ph = np.abs(self.state), np.angle(self.state)
-        cols = hsv_to_rgb(
+        """
+        Plot the magnitudes and phases of the statevector.
+        """
+        mag = np.abs(self.state)
+        ph = np.angle(self.state)  # in range [-pi, pi]
+        colors = hsv_to_rgb(
             np.column_stack(
-                ((ph % (2 * np.pi)) / (2 * np.pi), np.ones(len(ph)), np.ones(len(ph)))
+                (((ph % (2 * np.pi)) / (2 * np.pi)), np.ones(len(ph)), np.ones(len(ph)))
             )
         )
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(range(len(mag)), mag, color=cols)
+        ax.bar(range(len(mag)), mag, color=colors)
         ax.set(
             xlabel="Basis state (decimal)",
             ylabel="Amplitude magnitude",
             title=f"{self.n}-Qubit State",
         )
-        cb = plt.colorbar(plt.cm.ScalarMappable(cmap="hsv"), ax=ax)
-        cb.set_label("Phase (radians mod 2π)")
+        # Create a colorbar for phase
+        sm = plt.cm.ScalarMappable(cmap="hsv")
+        cbar = plt.colorbar(sm, ax=ax)
+        cbar.set_label("Phase (radians mod 2π)")
+        plt.tight_layout()
         plt.show()
 
     def draw(self, ax: plt.Axes = None, figsize: tuple[int, int] = None):
+        """
+        Draw a simple circuit diagram of the operations that were applied.
+        """
         if ax is None:
             if not figsize:
                 figsize = (max(8, len(self._circuit)), self.n + 1)
             fig, ax = plt.subplots(figsize=figsize)
+        # Draw horizontal lines for each qubit wire
         for q in range(self.n):
             ax.hlines(q, -0.5, len(self._circuit) - 0.5, color="k")
-        cC = lambda x, y: ax.add_patch(Circle((x, y), 0.08, fc="k", zorder=3))
-        xT = lambda x, y: (
-            ax.add_patch(Circle((x, y), 0.18, fc="w", ec="k", zorder=3)),
+
+        def cC(x, y):
+            ax.add_patch(Circle((x, y), 0.08, fc="k", zorder=3))
+
+        def xT(x, y):
+            ax.add_patch(Circle((x, y), 0.18, fc="w", ec="k", zorder=3))
             ax.plot(
                 [x - 0.1, x + 0.1],
                 [y - 0.1, y + 0.1],
@@ -148,52 +169,51 @@ class QubitSimulator:
                 [y + 0.1, y - 0.1],
                 "k",
                 zorder=4,
-            ),
-        )
-        box = lambda x, y, t: (
+            )
+
+        def box(x, y, t):
             ax.add_patch(
                 Rectangle(
                     (x - 0.3, y - 0.3), 0.6, 0.6, fc="lightblue", ec="k", zorder=3
                 )
-            ),
-            ax.text(x, y, t, ha="center", va="center", zorder=4),
-        )
-        for i, (g, qs, *pars) in enumerate(self._circuit):
-            if g in "XYZHST":
-                box(i, qs[0], g)
-            elif g == "U":
-                box(
-                    i, qs[0], f"U\n({pars[0][0]:.2g},{pars[0][1]:.2g},{pars[0][2]:.2g})"
-                )
-            elif g in ("CX", "CU"):
-                ax.vlines(i, *sorted(qs), color="k")
-                cC(i, qs[0])
-                if g == "CX":
-                    xT(i, qs[1])
+            )
+            ax.text(x, y, t, ha="center", va="center", zorder=4)
+
+        # Render each gate in the circuit
+        for i, (gate_name, qubits, *pars) in enumerate(self._circuit):
+            if gate_name in "XYZHST":
+                box(i, qubits[0], gate_name)
+            elif gate_name == "U":
+                theta, phi, lam = pars[0]
+                box(i, qubits[0], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})")
+            elif gate_name in ("CX", "CU"):
+                ax.vlines(i, *sorted(qubits), color="k")
+                cC(i, qubits[0])
+                if gate_name == "CX":
+                    xT(i, qubits[1])
                 else:
-                    box(
-                        i,
-                        qs[1],
-                        f"U\n({pars[0][0]:.2g},{pars[0][1]:.2g},{pars[0][2]:.2g})",
-                    )
-            elif g in ("SWAP", "iSWAP"):
-                ax.vlines(i, *sorted(qs), color="k")
-                xT(i, qs[0])
-                xT(i, qs[1])
-                if g == "iSWAP":
-                    ax.text(i, sum(qs) / 2, "i", ha="center", va="center", zorder=4)
-            elif g == "TOFFOLI":
-                ax.vlines(i, min(qs), max(qs), color="k")
-                cC(i, qs[0])
-                cC(i, qs[1])
-                xT(i, qs[2])
-            elif g == "FREDKIN":
-                ax.vlines(i, min(qs), max(qs), color="k")
-                cC(i, qs[0])
-                xT(i, qs[1])
-                xT(i, qs[2])
+                    theta, phi, lam = pars[0]
+                    box(i, qubits[1], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})")
+            elif gate_name in ("SWAP", "iSWAP"):
+                ax.vlines(i, *sorted(qubits), color="k")
+                xT(i, qubits[0])
+                xT(i, qubits[1])
+                if gate_name == "iSWAP":
+                    ax.text(i, sum(qubits) / 2, "i", ha="center", va="center", zorder=4)
+            elif gate_name == "TOFFOLI":
+                ax.vlines(i, min(qubits), max(qubits), color="k")
+                cC(i, qubits[0])
+                cC(i, qubits[1])
+                xT(i, qubits[2])
+            elif gate_name == "FREDKIN":
+                ax.vlines(i, min(qubits), max(qubits), color="k")
+                cC(i, qubits[0])
+                xT(i, qubits[1])
+                xT(i, qubits[2])
             else:
-                box(i, qs[0], g)
+                # Default fallback if a new gate name is added
+                box(i, qubits[0], gate_name)
+        # Label qubits
         for q in range(self.n):
             ax.text(-1, q, f"q{q}", ha="right", va="center")
         ax.set_xlim(-1, len(self._circuit))
