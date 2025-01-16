@@ -7,16 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'
     - name: Install dependencies
       run: |
         pip install -U pip
         pip install -r requirements.txt
-        pip install "black>=21.5b0" "coverage>=5.5" "pytest>=2.1.0"
+        pip install black coverage pytest
     - name: Format code with Black
       run: python3 -m black $(find . -name '*.py')
     - name: Run tests with coverage

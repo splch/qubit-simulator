@@ -1,6 +1,6 @@
 # Qubit Simulator
 
-Qubit Simulator is a simple and lightweight library that provides a quantum simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates such as Hadamard, π/8, Controlled-Not, and generic unitary transformations.
+Qubit Simulator is a simple and lightweight library that provides a quantum statevector simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates using NumPy.
 
 ## Installation
 
@@ -37,7 +37,7 @@ simulator.cx(0, 2)  # Controlled-Not gate
 Define and apply custom gates using angles:
 
 ```python
-simulator.u(2, 0.3, 0.4, 0.5)  # Generic gate
+simulator.u(0.3, 0.4, 0.5, 2)  # Generic gate
 ```
 
 ### Measurements
@@ -51,32 +51,6 @@ print(simulator.run(shots=100))
 ```plaintext
 {'000': 46, '001': 4, '100': 4, '101': 46}
 ```
-
-### Circuit Representation
-
-Get a string representation of the circuit:
-
-```python
-print(simulator)
-```
-
-```plaintext
------------------------------------
-| H |   | @ |                     |
-|   | T |   |                     |
-|   |   | X | U(0.30, 0.40, 0.50) |
------------------------------------
-```
-
-### Wavefunction Plot
-
-Show the amplitude and phase of all quantum states:
-
-```python
-simulator.plot_wavefunction()
-```
-
-![Wavefunction Scatter Plot](https://github.com/splch/qubit-simulator/assets/25377399/de3242ef-9c14-44be-b49b-656e9727c618)
 
 ## Testing
 
