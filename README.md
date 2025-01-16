@@ -77,7 +77,7 @@ print(sim.run(shots=100))
 Show the amplitude and phase of all quantum states:
 
 ```python
-sim.plot_state()
+sim.state()
 ```
 
 ![Statevector Bar Chart](https://github.com/user-attachments/assets/f883b77f-1dc5-4236-8aed-0d67f8305e12)
