@@ -13,6 +13,12 @@ class QubitSimulator:
         # 24 = ~8*3 overhead for some ints
         return self._state.nbytes + sum(op.__sizeof__() for op in self._circuit) + 24
 
+    def __repr__(self):
+        return f"sim = QubitSimulator(num_qubits={self.n})\n" + "\n".join(
+            f"sim.{g_name.lower()}({', '.join(map(str, (*pars[0], *qubits) if pars else qubits))})"
+            for g_name, qubits, *pars in self._circuit
+        )
+
     def reset(self):
         self._state[:] = 0
         self._state[0] = 1
@@ -82,7 +88,6 @@ class QubitSimulator:
         base_counts = float_counts.astype(int)
         remainder = shots - base_counts.sum()
         if remainder:
-            # Give leftover shots to largest fractional parts
             frac = float_counts - base_counts
             base_counts[np.argsort(frac)[-remainder:]] += 1
         return {f"{i:0{self.n}b}": int(c) for i, c in enumerate(base_counts) if c}
