@@ -29,7 +29,7 @@ Create a simulator with a specified number of qubits:
 ```python
 from qubit_simulator import QubitSimulator
 
-simulator = QubitSimulator(3)
+sim = QubitSimulator(num_qubits=2)
 ```
 
 ### Applying Gates
@@ -37,9 +37,9 @@ simulator = QubitSimulator(3)
 Apply various quantum gates to the qubits:
 
 ```python
-simulator.h(0)      # Hadamard gate
-simulator.t(1)      # π/8 gate
-simulator.cx(0, 2)  # Controlled-Not gate
+sim.h(0)      # Hadamard gate
+sim.t(0)      # π/8 gate
+sim.cx(0, 1)  # Controlled-Not gate
 ```
 
 ### Custom Gates
@@ -47,7 +47,7 @@ simulator.cx(0, 2)  # Controlled-Not gate
 Define and apply custom gates using angles:
 
 ```python
-simulator.u(0.3, 0.4, 0.5, 2)  # Generic gate
+sim.u(1.05, 1.57, 3.14, 1)  # Arbitrary single-qubit gate
 ```
 
 ### Circuit Drawing
@@ -55,17 +55,17 @@ simulator.u(0.3, 0.4, 0.5, 2)  # Generic gate
 Get a drawing of the circuit:
 
 ```python
-simulator.draw()
+sim.draw()
 ```
 
-![Circuit Drawing](https://github.com/user-attachments/assets/7dda252d-c931-4120-b4af-d75bfa1d3ea9)
+![Circuit Drawing](https://github.com/user-attachments/assets/2e6dbbc3-39e0-4d4f-8c43-c6f2ba83e121)
 
 ### Measurements
 
 Measure the state of the qubits:
 
 ```python
-print(simulator.run(shots=100))
+print(sim.run(shots=100))
 ```
 
 ```plaintext
@@ -77,10 +77,10 @@ print(simulator.run(shots=100))
 Show the amplitude and phase of all quantum states:
 
 ```python
-simulator.plot_state()
+sim.state()
 ```
 
-![Statevector Bar Chart](https://github.com/user-attachments/assets/3cdb0f17-e384-416f-b29d-f2bc6f5faaab)
+![Statevector Bar Chart](https://github.com/user-attachments/assets/f883b77f-1dc5-4236-8aed-0d67f8305e12)
 
 ## Testing
 
