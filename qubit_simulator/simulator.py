@@ -121,48 +121,56 @@ class QubitSimulator:
         Plot the magnitudes and phases of the statevector.
         """
         import matplotlib.pyplot as plt
-        from matplotlib.colors import hsv_to_rgb
+        from matplotlib.colors import hsv_to_rgb, Normalize
+        from matplotlib import cm
 
         mag = np.abs(self.state)
-        ph = np.angle(self.state)  # in range [-pi, pi]
+        ph = np.angle(self.state)  # Phase in range [-π, π]
         colors = hsv_to_rgb(
             np.column_stack(
                 (((ph % (2 * np.pi)) / (2 * np.pi)), np.ones(len(ph)), np.ones(len(ph)))
             )
         )
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(range(len(mag)), mag, color=colors)
+        ax.bar([f"{i:0{self.n}b}" for i in range(len(mag))], mag, color=colors)
         ax.set(
-            xlabel="Basis state (decimal)",
+            xlabel="Basis state",
             ylabel="Amplitude magnitude",
             title=f"{self.n}-Qubit State",
         )
-        # Create a colorbar for phase
-        sm = plt.cm.ScalarMappable(cmap="hsv")
+        ax.tick_params(axis="x", labelrotation=67)
+        norm = Normalize(vmin=-np.pi, vmax=np.pi)
+        sm = cm.ScalarMappable(cmap="hsv", norm=norm)
         cbar = plt.colorbar(sm, ax=ax)
-        cbar.set_label("Phase (radians mod 2π)")
+        cbar.set_label("Phase (radians)")
+        cbar.ax.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
         plt.tight_layout()
         plt.show()
 
-    def draw(self, ax=None, figsize: tuple[int, int] = None):
+    def draw(self):
         """
         Draw a simple circuit diagram of the operations that were applied.
         """
         import matplotlib.pyplot as plt
         from matplotlib.patches import Circle, Rectangle
+        from matplotlib import cm
+        import hashlib
 
-        if ax is None:
-            if not figsize:
-                figsize = (max(8, len(self._circuit)), self.n + 1)
-            fig, ax = plt.subplots(figsize=figsize)
+        fig, ax = plt.subplots(figsize=(max(8, len(self._circuit)), self.n + 1))
         # Draw horizontal lines for each qubit wire
         for q in range(self.n):
             ax.hlines(q, -0.5, len(self._circuit) - 0.5, color="k")
 
-        def cC(x, y):
+        def gC(name: str, modulo: int = 313) -> tuple[float, float, float]:
+            hashed = int(hashlib.md5(name.encode()).hexdigest(), 36) % modulo
+            norm = hashed / modulo  # Normalize to [0, 1]
+            return cm.tab20(norm)  # Use a colormap
+
+        def cC(x: float, y: float):
             ax.add_patch(Circle((x, y), 0.08, fc="k", zorder=3))
 
-        def xT(x, y):
+        def xT(x: float, y: float):
             ax.add_patch(Circle((x, y), 0.18, fc="w", ec="k", zorder=3))
             ax.plot(
                 [x - 0.1, x + 0.1],
@@ -174,21 +182,20 @@ class QubitSimulator:
                 zorder=4,
             )
 
-        def box(x, y, t):
+        def box(x: float, y: float, t: str, color: tuple[float, float, float]):
             ax.add_patch(
-                Rectangle(
-                    (x - 0.3, y - 0.3), 0.6, 0.6, fc="lightblue", ec="k", zorder=3
-                )
+                Rectangle((x - 0.3, y - 0.3), 0.6, 0.6, fc=color, ec="k", zorder=3)
             )
             ax.text(x, y, t, ha="center", va="center", zorder=4)
 
         # Render each gate in the circuit
         for i, (gate_name, qubits, *pars) in enumerate(self._circuit):
+            color = gC(gate_name + "".join(map(str, pars)))  # Deterministic color
             if gate_name in "XYZHST":
-                box(i, qubits[0], gate_name)
+                box(i, qubits[0], gate_name, color)
             elif gate_name == "U":
                 theta, phi, lam = pars[0]
-                box(i, qubits[0], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})")
+                box(i, qubits[0], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})", color)
             elif gate_name in ("CX", "CU"):
                 ax.vlines(i, *sorted(qubits), color="k")
                 cC(i, qubits[0])
@@ -196,7 +203,7 @@ class QubitSimulator:
                     xT(i, qubits[1])
                 else:
                     theta, phi, lam = pars[0]
-                    box(i, qubits[1], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})")
+                    box(i, qubits[1], f"U\n({theta:.2g},{phi:.2g},{lam:.2g})", color)
             elif gate_name in ("SWAP", "iSWAP"):
                 ax.vlines(i, *sorted(qubits), color="k")
                 xT(i, qubits[0])
@@ -215,7 +222,7 @@ class QubitSimulator:
                 xT(i, qubits[2])
             else:
                 # Default fallback if a new gate name is added
-                box(i, qubits[0], gate_name)
+                box(i, qubits[0], gate_name, color)
         # Label qubits
         for q in range(self.n):
             ax.text(-1, q, f"q{q}", ha="right", va="center")
@@ -223,6 +230,6 @@ class QubitSimulator:
         ax.set_ylim(-0.5, self.n - 0.5)
         ax.invert_yaxis()
         ax.axis("off")
-        ax.set_title("Circuit Diagram")
+        ax.set_title(f"{self.n}-Qubit Circuit")
         plt.tight_layout()
         plt.show()
