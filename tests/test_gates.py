@@ -82,13 +82,13 @@ def test_U_parameterized_gate():
     assert Umat.shape == (2, 2), "Parameterized U gate should be 2x2."
 
     # 2) Produce X up to global phase with U(π, -π/2, π/2)
-    U_x = Gates.U(theta=math.pi, phi=-math.pi/2, lam=math.pi/2)
+    U_x = Gates.U(theta=math.pi, phi=-math.pi / 2, lam=math.pi / 2)
     X = Gates.X
 
     # Compare up to a global phase
     # We'll pick a nonzero element to find the ratio
     ratio = U_x[0, 1] / X[0, 1]  # e.g., compare top-right
     adjusted = U_x * np.conjugate(ratio)
-    assert np.allclose(adjusted, X, atol=1e-8), (
-        "U(π, -π/2, π/2) not matching X up to a global phase."
-    )
+    assert np.allclose(
+        adjusted, X, atol=1e-8
+    ), "U(π, -π/2, π/2) not matching X up to a global phase."
