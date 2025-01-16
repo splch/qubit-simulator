@@ -1,6 +1,16 @@
 # Qubit Simulator
 
-Qubit Simulator is a simple and lightweight library that provides a quantum statevector simulator for simulating qubits and quantum gates. It supports basic quantum operations and gates using NumPy.
+A simple yet flexible statevector-based quantum circuit simulator for Python. It supports common single-, two-, and three-qubit gates (including parameterized gates), measurement (shot-based sampling), state resetting, and basic circuit visualization.
+
+## Features
+
+- **Statevector Simulation**: Maintains a complex-valued statevector of size ( 2^n ).
+- **Common Gates**: X, Y, Z, H, S, T, plus multi-qubit gates like CNOT, SWAP, Toffoli, Fredkin, etc.
+- **Parameterized Gates**: General single-qubit rotation ( U(θ, φ, λ) ).
+- **Controlled Gates**: Automatically construct controlled versions of single-qubit gates.
+- **Circuit Visualization**: Generate a diagram of applied operations with `.draw()`.
+- **Measurement**: Returns shot-based measurement outcomes from the final state.
+- **Lightweight**: Only requires [NumPy](https://numpy.org). For plotting, install optional [matplotlib](https://matplotlib.org).
 
 ## Installation
 
