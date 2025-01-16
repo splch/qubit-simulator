@@ -31,7 +31,7 @@ class QubitSimulator:
         # Flatten back to 1D
         self.state = st_out.ravel()
 
-    # -- Single-qubit gates --
+    # Single-qubit gates
     def x(self, q: int):
         self._apply_gate(Gates.X, [q])
 
@@ -53,7 +53,7 @@ class QubitSimulator:
     def u(self, theta: float, phi: float, lam: float, q: int):
         self._apply_gate(Gates.U(theta, phi, lam), [q])
 
-    # -- Two-qubit gates --
+    # Two-qubit gates
     def cx(self, control: int, target: int):
         self._apply_gate(Gates.controlled_gate(Gates.X), [control, target])
 
@@ -68,19 +68,22 @@ class QubitSimulator:
     def iswap(self, q1: int, q2: int):
         self._apply_gate(Gates.iSWAP_matrix(), [q1, q2])
 
-    # -- Three-qubit gates --
+    # Three-qubit gates
     def toffoli(self, c1: int, c2: int, t: int):
         self._apply_gate(Gates.Toffoli_matrix(), [c1, c2, t])
 
     def fredkin(self, c: int, t1: int, t2: int):
         self._apply_gate(Gates.Fredkin_matrix(), [c, t1, t2])
 
-    # -- Simulation & measurement --
-    def run(self, shots: int = 1024) -> dict[str, int]:
-        probs = np.abs(self.state) ** 2
-        outcomes = np.random.choice(2**self.n, p=probs, size=shots)
-        counts = {}
-        for out in outcomes:
-            bitstring = format(out, "0{}b".format(self.n))
-            counts[bitstring] = counts.get(bitstring, 0) + 1
-        return counts
+    # Simulation & measurement
+    def run(self, shots: int = 100) -> dict[str, int]:
+        # Compute base counts by multiplying probabilities and truncating
+        float_counts = shots * (np.abs(self.state)**2)
+        base_counts = float_counts.astype(int)
+        remainder = shots - base_counts.sum()
+        if remainder:
+            # Distribute leftover shots to states with the largest fractional parts
+            fractional_parts = float_counts - base_counts
+            base_counts[np.argsort(fractional_parts)[-remainder:]] += 1
+        # Return only those states that actually occurred
+        return {f"{i:0{self.n}b}": int(c) for i, c in enumerate(base_counts) if c}
