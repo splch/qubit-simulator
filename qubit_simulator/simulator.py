@@ -1,7 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import hsv_to_rgb
-from matplotlib.patches import Circle, Rectangle
 from .gates import Gates
 
 
@@ -123,6 +120,9 @@ class QubitSimulator:
         """
         Plot the magnitudes and phases of the statevector.
         """
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import hsv_to_rgb
+
         mag = np.abs(self.state)
         ph = np.angle(self.state)  # in range [-pi, pi]
         colors = hsv_to_rgb(
@@ -144,10 +144,13 @@ class QubitSimulator:
         plt.tight_layout()
         plt.show()
 
-    def draw(self, ax: plt.Axes = None, figsize: tuple[int, int] = None):
+    def draw(self, ax=None, figsize: tuple[int, int] = None):
         """
         Draw a simple circuit diagram of the operations that were applied.
         """
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Circle, Rectangle
+
         if ax is None:
             if not figsize:
                 figsize = (max(8, len(self._circuit)), self.n + 1)

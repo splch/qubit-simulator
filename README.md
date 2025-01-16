@@ -7,7 +7,7 @@ Qubit Simulator is a simple and lightweight library that provides a quantum stat
 Install Qubit Simulator via pip:
 
 ```bash
-pip install qubit-simulator
+pip install qubit-simulator[visualization]
 ```
 
 ## Usage
@@ -39,6 +39,16 @@ Define and apply custom gates using angles:
 ```python
 simulator.u(0.3, 0.4, 0.5, 2)  # Generic gate
 ```
+
+### Circuit Drawing
+
+Get a drawing of the circuit:
+
+```python
+simulator.draw()
+```
+
+![Circuit Drawing](https://github.com/user-attachments/assets/7dda252d-c931-4120-b4af-d75bfa1d3ea9)
 
 ### Measurements
 
