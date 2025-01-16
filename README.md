@@ -49,8 +49,18 @@ print(simulator.run(shots=100))
 ```
 
 ```plaintext
-{'000': 46, '001': 4, '100': 4, '101': 46}
+{'000': 49, '001': 1, '100': 1, '101': 49}
 ```
+
+### Statevector Plot
+
+Show the amplitude and phase of all quantum states:
+
+```python
+simulator.plot_state()
+```
+
+![Statevector Bar Chart](https://github.com/user-attachments/assets/3cdb0f17-e384-416f-b29d-f2bc6f5faaab)
 
 ## Testing
 

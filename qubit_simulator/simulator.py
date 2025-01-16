@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
 from .gates import Gates
 
 
@@ -12,6 +14,13 @@ class QubitSimulator:
         self.n = num_qubits
         # Statevector of length 2^n, start in |0...0>
         self.state = np.zeros(2**num_qubits, dtype=complex)
+        self.state[0] = 1.0
+
+    def __sizeof__(self):
+        return self.state.nbytes + 8  # 8 bytes for the int n
+
+    def reset(self):
+        self.state = np.zeros(2**self.n, dtype=complex)
         self.state[0] = 1.0
 
     def _apply_gate(self, U: np.ndarray, qubits: list):
@@ -78,7 +87,7 @@ class QubitSimulator:
     # Simulation & measurement
     def run(self, shots: int = 100) -> dict[str, int]:
         # Compute base counts by multiplying probabilities and truncating
-        float_counts = shots * (np.abs(self.state)**2)
+        float_counts = shots * (np.abs(self.state) ** 2)
         base_counts = float_counts.astype(int)
         remainder = shots - base_counts.sum()
         if remainder:
@@ -87,3 +96,21 @@ class QubitSimulator:
             base_counts[np.argsort(fractional_parts)[-remainder:]] += 1
         # Return only those states that actually occurred
         return {f"{i:0{self.n}b}": int(c) for i, c in enumerate(base_counts) if c}
+
+    def plot_state(self):
+        mag, ph = np.abs(self.state), np.angle(self.state)
+        cols = hsv_to_rgb(
+            np.column_stack(
+                ((ph % (2 * np.pi)) / (2 * np.pi), np.ones(len(ph)), np.ones(len(ph)))
+            )
+        )
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.bar(range(len(mag)), mag, color=cols)
+        ax.set(
+            xlabel="Basis state (decimal)",
+            ylabel="Amplitude magnitude",
+            title=f"{self.n}-Qubit State",
+        )
+        cb = plt.colorbar(plt.cm.ScalarMappable(cmap="hsv"), ax=ax)
+        cb.set_label("Phase (radians mod 2π)")
+        plt.show()

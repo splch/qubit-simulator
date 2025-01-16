@@ -223,3 +223,16 @@ def test_state_norm_is_one():
     sim.cx(0, 1)
     norm = np.sum(np.abs(sim.state) ** 2)
     assert np.isclose(norm, 1.0), "State norm deviated from 1."
+
+def test_reset():
+    sim = QubitSimulator(num_qubits=2)
+    sim.h(0)
+    sim.s(0)
+    sim.cx(0, 1)
+    sim.reset()
+    expected = np.array([1, 0, 0, 0], dtype=complex)
+    assert np.allclose(sim.state, expected), "Reset did not return to |00>."
+
+def test_sizeof():
+    sim = QubitSimulator(num_qubits=2)
+    assert sim.__sizeof__() == 2**2 * 16 + 8, "Size of simulator is not 2^2 * 16 + 8 bytes."
