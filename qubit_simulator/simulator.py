@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import hsv_to_rgb
+from matplotlib.patches import Circle, Rectangle
 from .gates import Gates
 
 
@@ -15,9 +16,10 @@ class QubitSimulator:
         # Statevector of length 2^n, start in |0...0>
         self.state = np.zeros(2**num_qubits, dtype=complex)
         self.state[0] = 1.0
+        self._circuit = []
 
     def __sizeof__(self):
-        return self.state.nbytes + 8  # 8 bytes for the int n
+        return self.state.nbytes + sum(op.__sizeof__() for op in self._circuit) + 8
 
     def reset(self):
         self.state = np.zeros(2**self.n, dtype=complex)
@@ -43,46 +45,59 @@ class QubitSimulator:
     # Single-qubit gates
     def x(self, q: int):
         self._apply_gate(Gates.X, [q])
+        self._circuit.append(("X", [q]))
 
     def y(self, q: int):
         self._apply_gate(Gates.Y, [q])
+        self._circuit.append(("Y", [q]))
 
     def z(self, q: int):
         self._apply_gate(Gates.Z, [q])
+        self._circuit.append(("Z", [q]))
 
     def h(self, q: int):
         self._apply_gate(Gates.H, [q])
+        self._circuit.append(("H", [q]))
 
     def s(self, q: int):
         self._apply_gate(Gates.S, [q])
+        self._circuit.append(("S", [q]))
 
     def t(self, q: int):
         self._apply_gate(Gates.T, [q])
+        self._circuit.append(("T", [q]))
 
     def u(self, theta: float, phi: float, lam: float, q: int):
         self._apply_gate(Gates.U(theta, phi, lam), [q])
+        self._circuit.append(("U", [q], (theta, phi, lam)))
 
     # Two-qubit gates
     def cx(self, control: int, target: int):
         self._apply_gate(Gates.controlled_gate(Gates.X), [control, target])
+        self._circuit.append(("CX", [control, target]))
 
     def cu(self, theta: float, phi: float, lam: float, control: int, target: int):
         self._apply_gate(
             Gates.controlled_gate(Gates.U(theta, phi, lam)), [control, target]
         )
+        self._circuit.append(("CU", [control, target], (theta, phi, lam)))
 
     def swap(self, q1: int, q2: int):
         self._apply_gate(Gates.SWAP_matrix(), [q1, q2])
+        self._circuit.append(("SWAP", [q1, q2]))
 
     def iswap(self, q1: int, q2: int):
         self._apply_gate(Gates.iSWAP_matrix(), [q1, q2])
+        self._circuit.append(("iSWAP", [q1, q2]))
 
     # Three-qubit gates
     def toffoli(self, c1: int, c2: int, t: int):
         self._apply_gate(Gates.Toffoli_matrix(), [c1, c2, t])
+        self._circuit.append(("TOFFOLI", [c1, c2, t]))
 
     def fredkin(self, c: int, t1: int, t2: int):
         self._apply_gate(Gates.Fredkin_matrix(), [c, t1, t2])
+        self._circuit.append(("FREDKIN", [c, t1, t2]))
 
     # Simulation & measurement
     def run(self, shots: int = 100) -> dict[str, int]:
@@ -113,4 +128,78 @@ class QubitSimulator:
         )
         cb = plt.colorbar(plt.cm.ScalarMappable(cmap="hsv"), ax=ax)
         cb.set_label("Phase (radians mod 2π)")
+        plt.show()
+
+    def draw(self, ax: plt.Axes = None, figsize: tuple[int, int] = None):
+        if ax is None:
+            if not figsize:
+                figsize = (max(8, len(self._circuit)), self.n + 1)
+            fig, ax = plt.subplots(figsize=figsize)
+        for q in range(self.n):
+            ax.hlines(q, -0.5, len(self._circuit) - 0.5, color="k")
+        cC = lambda x, y: ax.add_patch(Circle((x, y), 0.08, fc="k", zorder=3))
+        xT = lambda x, y: (
+            ax.add_patch(Circle((x, y), 0.18, fc="w", ec="k", zorder=3)),
+            ax.plot(
+                [x - 0.1, x + 0.1],
+                [y - 0.1, y + 0.1],
+                "k",
+                [x - 0.1, x + 0.1],
+                [y + 0.1, y - 0.1],
+                "k",
+                zorder=4,
+            ),
+        )
+        box = lambda x, y, t: (
+            ax.add_patch(
+                Rectangle(
+                    (x - 0.3, y - 0.3), 0.6, 0.6, fc="lightblue", ec="k", zorder=3
+                )
+            ),
+            ax.text(x, y, t, ha="center", va="center", zorder=4),
+        )
+        for i, (g, qs, *pars) in enumerate(self._circuit):
+            if g in "XYZHST":
+                box(i, qs[0], g)
+            elif g == "U":
+                box(
+                    i, qs[0], f"U\n({pars[0][0]:.2g},{pars[0][1]:.2g},{pars[0][2]:.2g})"
+                )
+            elif g in ("CX", "CU"):
+                ax.vlines(i, *sorted(qs), color="k")
+                cC(i, qs[0])
+                if g == "CX":
+                    xT(i, qs[1])
+                else:
+                    box(
+                        i,
+                        qs[1],
+                        f"U\n({pars[0][0]:.2g},{pars[0][1]:.2g},{pars[0][2]:.2g})",
+                    )
+            elif g in ("SWAP", "iSWAP"):
+                ax.vlines(i, *sorted(qs), color="k")
+                xT(i, qs[0])
+                xT(i, qs[1])
+                if g == "iSWAP":
+                    ax.text(i, sum(qs) / 2, "i", ha="center", va="center", zorder=4)
+            elif g == "TOFFOLI":
+                ax.vlines(i, min(qs), max(qs), color="k")
+                cC(i, qs[0])
+                cC(i, qs[1])
+                xT(i, qs[2])
+            elif g == "FREDKIN":
+                ax.vlines(i, min(qs), max(qs), color="k")
+                cC(i, qs[0])
+                xT(i, qs[1])
+                xT(i, qs[2])
+            else:
+                box(i, qs[0], g)
+        for q in range(self.n):
+            ax.text(-1, q, f"q{q}", ha="right", va="center")
+        ax.set_xlim(-1, len(self._circuit))
+        ax.set_ylim(-0.5, self.n - 0.5)
+        ax.invert_yaxis()
+        ax.axis("off")
+        ax.set_title("Circuit Diagram")
+        plt.tight_layout()
         plt.show()
