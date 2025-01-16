@@ -7,7 +7,7 @@ Qubit Simulator is a simple and lightweight library that provides a quantum stat
 Install Qubit Simulator via pip:
 
 ```bash
-pip install qubit-simulator
+pip install qubit-simulator[visualization]
 ```
 
 ## Usage
@@ -40,6 +40,16 @@ Define and apply custom gates using angles:
 simulator.u(0.3, 0.4, 0.5, 2)  # Generic gate
 ```
 
+### Circuit Drawing
+
+Get a drawing of the circuit:
+
+```python
+simulator.draw()
+```
+
+![Circuit Drawing](https://github.com/user-attachments/assets/7dda252d-c931-4120-b4af-d75bfa1d3ea9)
+
 ### Measurements
 
 Measure the state of the qubits:
@@ -49,8 +59,18 @@ print(simulator.run(shots=100))
 ```
 
 ```plaintext
-{'000': 46, '001': 4, '100': 4, '101': 46}
+{'000': 49, '001': 1, '100': 1, '101': 49}
 ```
+
+### Statevector Plot
+
+Show the amplitude and phase of all quantum states:
+
+```python
+simulator.plot_state()
+```
+
+![Statevector Bar Chart](https://github.com/user-attachments/assets/3cdb0f17-e384-416f-b29d-f2bc6f5faaab)
 
 ## Testing
 
