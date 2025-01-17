@@ -47,7 +47,7 @@ sim.cx(0, 1)  # Controlled-Not gate
 Define and apply custom gates using angles:
 
 ```python
-sim.u(1.05, 1.57, 3.14, 1)  # Arbitrary single-qubit gate
+sim.u(1.2, 3.4, 5.6, 1)  # Arbitrary single-qubit gate
 ```
 
 ### Circuit Drawing
